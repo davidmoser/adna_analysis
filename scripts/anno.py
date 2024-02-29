@@ -9,7 +9,7 @@ long_col = 'Long.'
 id_col = 'Genetic ID'
 
 # Load your data
-df = pd.read_csv(file_path, sep='\t', quotechar='$', low_memory=True, on_bad_lines='warn')
+df = pd.read_csv(file_path, sep='\t', quotechar='$', low_memory=False, on_bad_lines='warn')
 
 # Convert latitude and longitude to x and y coordinates
 df[lat_col] = pd.to_numeric(df[lat_col], errors='coerce')
