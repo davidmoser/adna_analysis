@@ -4,27 +4,24 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 
-# n: Input dimension
-# m: hidden dimension
-# k: number of layers
 class SimpleGenoNet(nn.Module):
-    def __init__(self, n, m, k):
+    def __init__(self, input_dim, hidden_dim, hidden_layers):
         super(SimpleGenoNet, self).__init__()
         # Initial layer from n to m dimensions
-        self.initial_layer = nn.Linear(n, m)
+        self.initial_layer = nn.Linear(input_dim, hidden_dim)
         init.xavier_uniform_(self.initial_layer.weight)
         init.zeros_(self.initial_layer.bias)
 
         # Intermediate layers (k of them, each from m to m dimensions)
         self.intermediate_layers = nn.ModuleList()
-        for _ in range(k):
-            layer = nn.Linear(m, m)
+        for _ in range(hidden_layers):
+            layer = nn.Linear(hidden_dim, hidden_dim)
             init.xavier_uniform_(layer.weight)
             init.zeros_(layer.bias)
             self.intermediate_layers.append(layer)
 
         # Final layer to 3 dimensions
-        self.final_layer = nn.Linear(m, 3)
+        self.final_layer = nn.Linear(hidden_dim, 3)
         init.xavier_uniform_(self.final_layer.weight)
         init.zeros_(self.final_layer.bias)
 
@@ -38,28 +35,27 @@ class SimpleGenoNet(nn.Module):
 
         # Pass through the final layer
         x = self.final_layer(x)
+        # Learn tanh for the three outputs
+        # for conversion to actual age and coordinates see below
+        x = torch.tanh(x)
+        return x
 
-        # Post-processing for output ranges
-        # Age: Linear output, may need scaling/clipping to [0, 100000] after prediction
-        # Longitude: Scaled tanh output to [-180, 180]
-        # Latitude: Scaled tanh output to [-90, 90]
+    # Post-processing for output ranges
+    # Age: 1 to 100000
+    # Longitude: -180, 180
+    # Latitude: -90, 90
+    @staticmethod
+    def real_to_train(x):
         age, longitude, latitude = x[:, 0], x[:, 1], x[:, 2]
-        age = torch.exp((torch.tanh(age) + 1) * 5)
-        longitude = 180 * torch.tanh(longitude)
-        latitude = 90 * torch.tanh(latitude)
-
-        # Combine and return the processed outputs
+        age = (torch.log(age + 1) / 2.5 - 1).clamp(max=1)
+        longitude = longitude / 180
+        latitude = latitude / 90
         return torch.stack([age, longitude, latitude], dim=1)
 
-
-# Example usage
-n = 10  # Number of input dimensions (genotypes)
-m = 20  # Number of dimensions for intermediate layers
-k = 5  # Number of intermediate layers
-
-model = SimpleGenoNet(n, m, k)
-# Example input tensor (batch size of 1 for demonstration)
-input_tensor = torch.randint(0, 3, (1, n)).float()
-output = model(input_tensor)
-
-print(output)
+    @staticmethod
+    def train_to_real(x):
+        age, longitude, latitude = x[:, 0], x[:, 1], x[:, 2]
+        age = torch.exp(2.5 * (age + 1)) - 1
+        longitude = 180 * longitude
+        latitude = 90 * latitude
+        return torch.stack([age, longitude, latitude], dim=1)

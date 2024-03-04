@@ -14,17 +14,17 @@ print("Loading data")
 locations = np.array(list(anno.get_locations().values()))  # s x 2
 is_not_nan = ~np.isnan(locations).any(axis=1)
 locations = locations[is_not_nan]
-locations = np.array([[-90, 0], [0, 0], [90, 0]])
+locations[:, 0] = locations[:, 0] / 180
+locations[:, 1] = locations[:, 1] / 90
 
 ages = np.array(list(anno.get_ages().values()))  # s
 ages = ages[is_not_nan]
-ages = [100, 1000, 10000]
+ages = np.log(ages + 1) / 5 - 1
 
-zarr_file = '../data/aadr_v54.1.p1_1240K_public_eigenstrat.zarr'
+zarr_file = '../data/aadr_v54.1.p1_1240K_public_filtered.zarr'
 z = zarr.open(zarr_file, mode='r')
 genotypes = np.array(z['calldata/GT']).T
 genotypes = genotypes[is_not_nan]
-genotypes = [[0, 0, 2], [0, 2, 0], [2, 0, 0]]
 
 features = torch.Tensor(genotypes)  # s (samples) x n (SNPs)
 labels = torch.Tensor(np.column_stack((ages, locations)))
@@ -41,11 +41,12 @@ train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
 # Initialize the model, loss function, and optimizer
-print("Creating model")
-n, m, k = features.shape[1], 3, 0  # Assuming 'm' and 'k' as previously defined; 'n' is inferred from data
-model = SimpleGenoNet(n, m, k)
+print(f"Creating model, Input dimension: {features.shape[1]}")
+input_dim, hidden_dim, hidden_layers = features.shape[1], 200, 10
+model = SimpleGenoNet(input_dim, hidden_dim, hidden_layers)
 criterion = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks
-optimizer = optim.RMSprop(model.parameters(), lr=0.001)
+learning_rate = 0.001
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 print("finished")
 
 
@@ -62,9 +63,12 @@ def compute_loss(data_loader):
 
 
 # Training loop
-epochs = 10
+epochs = 1000
 train_losses, test_losses = [], []
 
+train_loss_previous = 0
+train_loss_average = 0
+train_loss_variance = 0
 for epoch in range(epochs):
     model.train()
     for data, target in train_loader:
@@ -90,7 +94,13 @@ for epoch in range(epochs):
     #     plt.legend()
     #     plt.show()
 
-    print(f'Epoch {epoch + 1}, Training Loss: {train_loss}, Test Loss: {test_loss}')
+plt.figure(figsize=(10, 5))
+plt.plot(np.log10(train_losses), label='Training Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Log Loss')
+plt.title(f'Simple-Geno-Net: Dimension: {hidden_dim}, Layers: {hidden_layers}, Learning rate: {learning_rate}')
+plt.legend()
+plt.show()
 
 # Save the final model
 torch.save(model.state_dict(), 'model_final.pth')

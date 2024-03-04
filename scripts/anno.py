@@ -26,4 +26,4 @@ def get_ages():
 
 
 def get_locations():
-    return dict(zip(ids, zip(lats, longs)))
+    return dict(zip(ids, zip(longs, lats)))
