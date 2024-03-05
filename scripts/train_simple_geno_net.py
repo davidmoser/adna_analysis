@@ -11,7 +11,7 @@ from simple_geno_net import SimpleGenoNet
 
 # Hyperparameters
 batch_size = 256
-learning_rate = 0.0001
+learning_rate = 0.0002
 hidden_dim, hidden_layers = 50, 20
 epochs = 100
 
@@ -29,26 +29,19 @@ z = zarr.open(zarr_file, mode='r')
 genotypes = np.array(z['calldata/GT']).T
 genotypes = genotypes[is_not_nan]
 
-features = torch.Tensor(genotypes)  # s (samples) x n (SNPs)
-labels = SimpleGenoNet.real_to_train(torch.Tensor(np.column_stack((ages, locations))))
-
-# Split data into training and test sets
-# features_train, features_test, labels_train, labels_test = train_test_split(features, labels, test_size=0.2,
-#                                                                             random_state=42)
+all_features = torch.Tensor(genotypes)  # s (samples) x n (SNPs)
+all_labels = SimpleGenoNet.real_to_train(torch.Tensor(np.column_stack((ages, locations))))
 
 # Create DataLoader instances for training and testing
-dataset = TensorDataset(features, labels)
-dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-
-# train_dataset = TensorDataset(features_train, labels_train)
-# test_dataset = TensorDataset(features_test, labels_test)
-# train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-# test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+train_dataset = TensorDataset(all_features, all_labels)
+train_dataset, test_dataset = torch.utils.data.random_split(train_dataset, [0.9, 0.1])
+train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+test_dataloader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=True)
 print("finished")
 
 # Initialize the model, loss function, and optimizer
-print(f"Creating model, Input dimension: {features.shape[1]}")
-input_dim = features.shape[1]
+print(f"Creating model, Input dimension: {all_features.shape[1]}")
+input_dim = all_features.shape[1]
 model = SimpleGenoNet(input_dim, hidden_dim, hidden_layers)
 loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
@@ -56,32 +49,43 @@ print("finished")
 
 
 def print_sample(index):
-    label = labels[[index]]
-    prediction = model(features[[index]])
+    model.eval()
+    test_features, test_labels = next(iter(test_dataloader))
+    label = test_labels[[index]]
+    prediction = model(test_features[[index]])
     loss = loss_function(label, prediction).item()
     label = SimpleGenoNet.train_to_real(label)
     prediction = SimpleGenoNet.train_to_real(prediction)
     print(f"Label: {label}, Prediction: {prediction}, Loss: {loss}")
 
 
+def calculate_loss(dataloader):
+    model.eval()
+    loss = 0
+    weight = 0
+    for features, labels in dataloader:
+        output = model(features)
+        loss += loss_function(output, labels).item() * len(features)
+        weight += len(features)
+    return loss / weight
+
+
 # Training loop
 train_losses, test_losses = [], []
 
 train_loss_previous = 0
-train_loss_average = 0
+train_loss_diff = 0
 train_loss_variance = 0
 for epoch in range(epochs):
-
-    train_loss_scalar = 0
-    for id_batch, (feature_batch, label_batch) in enumerate(dataloader):
+    model.train()
+    train_loss = 0
+    for feature_batch, label_batch in train_dataloader:
         output = model(feature_batch)
-        train_loss = loss_function(output, label_batch)
+        train_loss_obj = loss_function(output, label_batch)
 
         optimizer.zero_grad()
-        train_loss.backward()
+        train_loss_obj.backward()
         optimizer.step()
-
-        train_loss_scalar = train_loss.item()
 
         # Update plot
         # if epoch % 1 == 0:
@@ -93,20 +97,26 @@ for epoch in range(epochs):
         #     plt.title('Training and Test Loss')
         #     plt.legend()
         #     plt.show()
-    train_losses.append(train_loss_scalar)
-    train_loss_current_diff = train_loss_previous - train_loss_scalar
-    train_loss_average = (train_loss_average * 9 + train_loss_current_diff) / 10
-    train_loss_variance = (train_loss_variance * 9 + abs(train_loss_current_diff)) / 10
+    # Loss and change in loss
+    train_loss = calculate_loss(train_dataloader)
+    train_losses.append(train_loss)
+    train_loss_current_diff = train_loss_previous - train_loss
+    train_loss_diff = (train_loss_diff * 9 + train_loss_current_diff) / 10
+    # Validation loss
+    test_loss = calculate_loss(test_dataloader)
+    test_losses.append(test_loss)
+    # Print it out
     loss_scale = 10e6
-    print(f'Epoch {epoch + 1}, T-Loss: {round(loss_scale * train_loss_scalar)}, '
-          f'T-Difference: {round(loss_scale * train_loss_average)}, T-Variance: {round(loss_scale * train_loss_variance)}')
-    # print_sample(100)
-    # print_sample(200)
-    # print_sample(300)
-    train_loss_previous = train_loss_scalar
+    print(f'Epoch {epoch + 1}, T-Loss: {round(loss_scale * train_loss)}, '
+          f'T-Difference: {round(loss_scale * train_loss_diff)}, V-Loss: {round(loss_scale * test_loss)}')
+    print_sample(0)
+    print_sample(1)
+    print_sample(2)
+    train_loss_previous = train_loss
 
 plt.figure(figsize=(10, 5))
 plt.plot(np.log10(train_losses), label='Training Loss')
+plt.plot(np.log10(test_losses), label='Test Loss')
 plt.xlabel('Epoch')
 plt.ylabel('Log Loss')
 plt.title(f'Simple-Geno-Net: Dimension: {hidden_dim}, Layers: {hidden_layers}, '

@@ -47,7 +47,7 @@ class SimpleGenoNet(nn.Module):
     @staticmethod
     def real_to_train(x):
         age, longitude, latitude = x[:, 0], x[:, 1], x[:, 2]
-        age = (torch.log(age + 1) / 2.5 - 1).clamp(max=1)
+        age = (torch.log(age + 1) / 6 - 1).clamp(max=1)
         longitude = longitude / 180
         latitude = latitude / 90
         return torch.stack([age, longitude, latitude], dim=1)
@@ -55,7 +55,7 @@ class SimpleGenoNet(nn.Module):
     @staticmethod
     def train_to_real(x):
         age, longitude, latitude = x[:, 0], x[:, 1], x[:, 2]
-        age = torch.exp(2.5 * (age + 1)) - 1
+        age = torch.exp(6 * (age + 1)) - 1
         longitude = 180 * longitude
         latitude = 90 * latitude
         return torch.stack([age, longitude, latitude], dim=1)
