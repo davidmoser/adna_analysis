@@ -1,0 +1,11 @@
+Practical first steps:
+- Check if we're actually doing GPU learning. Look at optimization CPU vs GPU
+- Ramp up input dimension with more SNPs
+  - Write dataset from ZARR
+  - Transform ZARR for sample indexing
+  - Reading samples from ZARR to GPU in Mini-Batches
+
+Further reading:
+- Checkpoint every ten epochs (check performance), overwriting last checkpoint
+- Look at optimizers (Adam DONE)
+- Think about/look for/code simple framework to store models, their hyperparameters and data about learning periods

@@ -21,8 +21,8 @@ generator = torch.Generator(device=device)
 
 # Hyperparameters
 batch_size = 256
-learning_rate = 0.0002
-hidden_dim, hidden_layers = 50, 20
+learning_rate = 0.0001
+hidden_dim, hidden_layers = 200, 10
 epochs = 100
 
 # Load your data from a Zarr file
@@ -140,4 +140,4 @@ plt.legend()
 plt.show()
 
 # Save the final model
-torch.save(model.state_dict(), 'model_final.pth')
+# torch.save(model.state_dict(), 'model_final.pth')
