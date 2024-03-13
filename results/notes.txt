@@ -1,0 +1,31 @@
+#layers hidden dims learn.rate  1000xloss   comment
+10      100         0.001                90
+0       100         0.001               1.6e6       plateau
+5       100         0.001               680         repeating "rough" patches, like shark finns, still learning exponentially
+20      100         0.001                40         got below 0.4 in the first epoch
+50      100         0.01                300         aborted, after initial fast learning got barely any learning over many epochs. Vanishing gradient?
+30      100         0.01                330         stuck at .331, then rough patches then back at .331
+30      100         0.001                34         learning better than at higher learn.rate
+10      200         0.001                71         some fins, "under"exponential
+20      50          0.001                27         many fins
+20      50          0.0001               61         still some fins, slower learning
+20      50          0.0005               18         a lot of fins, but best loss yet
+Fix to loss calculation, loss below and above not comparable
+20      50          0.0005                6         a lot of fins, but best loss yet
+20      50          0.0002                6         less fins, but best loss yet, potential for more learning
+
+Now with batches
+#layers hidden dims learn.rate  batch   10e6xloss   comment
+20      50          0.0002      256      <500       learns much faster, down to Loss 6000 within 9 Epochs, down to <1, but very noisy
+from now on doing 100 epochs
+20      50          0.0001      256      3550
+20      50          0.001       256      8786
+20      50          0.00001     256     40324       slow learning or flat, but more stable
+20      50          0.0001      512     37318       slow learning, not flat, stable
+20      50          0.00001     512    211018       very slow learning, similar stability
+20      50          0.001       512     34770       faster learning, noisy, jumped back up
+20      50          0.0001      128      6653       similarly noisy as 256, learns fast initially
+20      50          0.00001     128     32690       looks same as for 0.0001 rate
+20      50          0.001       128     14507       noisy and flatish
+
+
