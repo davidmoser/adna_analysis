@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import zarr
+from torch.optim.lr_scheduler import ExponentialLR
 from torch.utils.data import TensorDataset, DataLoader
 
 import anno
@@ -47,6 +48,7 @@ input_dim = all_features.shape[1]
 model = SimpleGenoNet(input_dim, hidden_dim, hidden_layers)
 loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+scheduler = ExponentialLR(optimizer, gamma=0.9)
 print("finished")
 
 
@@ -99,6 +101,7 @@ for epoch in range(epochs):
         #     plt.title('Training and Test Loss')
         #     plt.legend()
         #     plt.show()
+    scheduler.step()
     # Loss and change in loss
     train_loss = calculate_loss(train_dataloader)
     train_losses.append(train_loss)
