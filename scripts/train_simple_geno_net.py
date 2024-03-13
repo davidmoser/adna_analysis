@@ -19,15 +19,17 @@ epochs = 100
 print("Preparing data")
 locations = np.array(list(anno.get_locations().values()))  # s x 2
 is_not_nan = ~np.isnan(locations).any(axis=1)
-locations = locations[is_not_nan]
-
 ages = np.array(list(anno.get_ages().values()))  # s
-ages = ages[is_not_nan]
+is_old = ages > 100
+filter = is_not_nan & is_old
+
+locations = locations[filter]
+ages = ages[filter]
 
 zarr_file = '../data/aadr_v54.1.p1_1240K_public_filtered.zarr'
 z = zarr.open(zarr_file, mode='r')
 genotypes = np.array(z['calldata/GT']).T
-genotypes = genotypes[is_not_nan]
+genotypes = genotypes[filter]
 
 all_features = torch.Tensor(genotypes)  # s (samples) x n (SNPs)
 all_labels = SimpleGenoNet.real_to_train(torch.Tensor(np.column_stack((ages, locations))))
