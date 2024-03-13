@@ -8,7 +8,16 @@ from torch.optim.lr_scheduler import ExponentialLR
 from torch.utils.data import TensorDataset, DataLoader
 
 import anno
+from scripts.log_memory import log_memory_usage
 from simple_geno_net import SimpleGenoNet
+
+# device_name = "cuda" if torch.cuda.is_available() else "cpu"
+device_name = 'cuda'
+print(f"Using device: {device_name}")
+
+device = torch.device(device_name)
+torch.set_default_device(device)
+generator = torch.Generator(device=device)
 
 # Hyperparameters
 batch_size = 256
@@ -32,14 +41,14 @@ z = zarr.open(zarr_file, mode='r')
 genotypes = np.array(z['calldata/GT']).T
 genotypes = genotypes[filter]
 
-all_features = torch.Tensor(genotypes)  # s (samples) x n (SNPs)
-all_labels = SimpleGenoNet.real_to_train(torch.Tensor(np.column_stack((ages, locations))))
+all_features = torch.Tensor(genotypes).to(device_name)  # s (samples) x n (SNPs)
+all_labels = SimpleGenoNet.real_to_train(torch.Tensor(np.column_stack((ages, locations))).to(device_name))
 
 # Create DataLoader instances for training and testing
 train_dataset = TensorDataset(all_features, all_labels)
-train_dataset, test_dataset = torch.utils.data.random_split(train_dataset, [0.9, 0.1])
-train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-test_dataloader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=True)
+train_dataset, test_dataset = torch.utils.data.random_split(train_dataset, [0.9, 0.1], generator=generator)
+train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, generator=generator)
+test_dataloader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=True, generator=generator)
 print("finished")
 
 # Initialize the model, loss function, and optimizer
@@ -114,9 +123,10 @@ for epoch in range(epochs):
     loss_scale = 10e6
     print(f'Epoch {epoch + 1}, T-Loss: {round(loss_scale * train_loss)}, '
           f'T-Difference: {round(loss_scale * train_loss_diff)}, V-Loss: {round(loss_scale * test_loss)}')
-    print_sample(0)
-    print_sample(1)
-    print_sample(2)
+    log_memory_usage()
+    # print_sample(0)
+    # print_sample(1)
+    # print_sample(2)
     train_loss_previous = train_loss
 
 plt.figure(figsize=(10, 5))
