@@ -1,9 +1,7 @@
 Practical first steps:
-- Check if we're actually doing GPU learning. Look at optimization CPU vs GPU
 - Ramp up input dimension with more SNPs
-  - Write dataset from ZARR
-  - Transform ZARR for sample indexing
-  - Reading samples from ZARR to GPU in Mini-Batches
+  - Reading samples from ZARR to GPU in Mini-Batches, again with optimal type
+    (which? it might need float bc. later steps? whats the type in the model)
 
 Further reading:
 - Checkpoint every ten epochs (check performance), overwriting last checkpoint

@@ -1,0 +1,11 @@
+- Jumpy loss function, go down with learning rate
+- Use small dataset for intuition
+- Comparing different hyperparameters in structured way
+- Minibatching improves speed and regularization
+- Adam, for each part derivative, is doing averaging (with exp decreasing weight) of the value v and its square s.
+  Then the change to the gradient is, learning_rate * v/sqrt(s). So it takes steps of length learning_rate in parameter
+  space, instead of taking larger steps for larger derivatives and smaller steps for smaller derivatives.
+- A learning rate schedule makes sense (see pngs) to make sure the model learns in smaller steps when close to
+  optimum.
+- Moving tensors between RAM and GPU-RAM, also need to have generators (for random numbers) on correct device
+- Can import and debug in python console (looked at pytorch default_collate)
