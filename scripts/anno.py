@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 
 # Replace 'path_to_your_file.txt' with the path to your tab-separated file
 file_path = '../data/aadr_v54.1.p1_1240K_public.anno'
@@ -9,7 +10,9 @@ long_col = 'Long.'
 id_col = 'Genetic ID'
 
 # Load your data
-df = pd.read_csv(file_path, sep='\t', quotechar='$', low_memory=False, on_bad_lines='warn')
+script_dir = os.path.dirname(os.path.abspath(__file__))
+absolute_path = os.path.join(script_dir, file_path)
+df = pd.read_csv(absolute_path, sep='\t', quotechar='$', low_memory=False, on_bad_lines='warn', na_values='..')
 
 # Convert latitude and longitude to x and y coordinates
 df[lat_col] = pd.to_numeric(df[lat_col], errors='coerce')
@@ -27,3 +30,7 @@ def get_ages():
 
 def get_locations():
     return dict(zip(ids, zip(longs, lats)))
+
+
+def get_labels():
+    return list(zip(ages, longs, lats))
