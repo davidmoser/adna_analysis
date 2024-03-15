@@ -3,13 +3,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import zarr
 from torch.optim.lr_scheduler import ExponentialLR
 from torch.utils.data import TensorDataset, DataLoader
 
 import anno
 from scripts.log_memory import log_memory_usage
 from simple_geno_net import SimpleGenoNet
+from zarr_dataset import ZarrDataset
 
 # device_name = "cuda" if torch.cuda.is_available() else "cpu"
 device_name = 'cuda'
@@ -27,33 +27,28 @@ epochs = 100
 
 # Load your data from a Zarr file
 print("Preparing data")
-locations = np.array(list(anno.get_locations().values()))  # s x 2
-is_not_nan = ~np.isnan(locations).any(axis=1)
-ages = np.array(list(anno.get_ages().values()))  # s
-is_old = ages > 100
-filter = is_not_nan & is_old
+dataset = ZarrDataset(
+    zarr_file='../data/aadr_v54.1.p1_1240K_public_all_arranged.zarr',
+    zarr_path='calldata/GT',
+    sample_transform=lambda genotype: torch.tensor(genotype, dtype=torch.float32),
+    label_file='../data/aadr_v54.1.p1_1240K_public.anno',
+    label_cols=[anno.age_col, anno.long_col, anno.lat_col],
+    label_transform=lambda lbl: torch.tensor(SimpleGenoNet.real_to_train_single(lbl), dtype=torch.float32),
+    panda_kwargs={'sep': '\t', 'quotechar': '$', 'low_memory': False, 'on_bad_lines': 'warn', 'na_values': '..'}
+)
 
-locations = locations[filter]
-ages = ages[filter]
-
-zarr_file = '../data/aadr_v54.1.p1_1240K_public_filtered.zarr'
-z = zarr.open(zarr_file, mode='r')
-genotypes = np.array(z['calldata/GT']).T
-genotypes = genotypes[filter]
-
-all_features = torch.Tensor(genotypes).to(device_name)  # s (samples) x n (SNPs)
-all_labels = SimpleGenoNet.real_to_train(torch.Tensor(np.column_stack((ages, locations))).to(device_name))
+dataset = dataset.filter(lambda label: np.all(~np.isnan(label)) and label[0] > 100)
 
 # Create DataLoader instances for training and testing
-train_dataset = TensorDataset(all_features, all_labels)
-train_dataset, test_dataset = torch.utils.data.random_split(train_dataset, [0.9, 0.1], generator=generator)
+train_dataset, test_dataset = torch.utils.data.random_split(dataset, [0.9, 0.1], generator=generator)
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, generator=generator)
 test_dataloader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=True, generator=generator)
 print("finished")
 
 # Initialize the model, loss function, and optimizer
-print(f"Creating model, Input dimension: {all_features.shape[1]}")
-input_dim = all_features.shape[1]
+sample, label = next(iter(dataset))
+print(f"Creating model, Input dimension: {len(sample)}")
+input_dim = len(sample)
 model = SimpleGenoNet(input_dim, hidden_dim, hidden_layers)
 loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)

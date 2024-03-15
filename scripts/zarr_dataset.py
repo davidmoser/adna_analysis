@@ -5,18 +5,21 @@ from torch.utils.data import Dataset, Subset
 
 
 class ZarrDataset(Dataset):
-    def __init__(self, anno_file, anno_cols, zarr_file, zarr_path):
-        df = pd.read_csv(anno_file, sep='\t', quotechar='$', low_memory=False, on_bad_lines='warn', na_values='..')
-        self.labels = df[anno_cols].values
+    def __init__(self, zarr_file, zarr_path, label_file, label_cols, sample_transform=None, label_transform=None,
+                 panda_kwargs=None):
+        df = pd.read_csv(label_file, **(panda_kwargs or {}))
+        self.labels = df[label_cols].values
         self.zarr = zarr.open(zarr_file, mode='r')[zarr_path]
+        self.sample_transform = sample_transform
+        self.label_transform = label_transform or (lambda row: row)
 
     def __len__(self):
         return len(self.labels)
 
     def __getitem__(self, index):
-        return self.zarr[index], self.labels[index]
+        return self.sample_transform(self.zarr[index]), self.label_transform(self.labels[index])
 
-    def filter_nan(self):
-        mask = np.all(~np.isnan(self.labels), axis=1)
+    def filter(self, label_criteria):
+        mask = np.apply_along_axis(label_criteria, axis=1, arr=self.labels)
         indices = mask.nonzero()[0]
         return Subset(self, indices)
