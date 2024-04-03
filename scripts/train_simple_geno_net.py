@@ -22,7 +22,7 @@ generator = torch.Generator(device=device)
 # Hyperparameters
 batch_size = 256
 learning_rate = 0.0001
-hidden_dim, hidden_layers = 200, 10
+hidden_dim, hidden_layers = 200, 50
 epochs = 100
 snp_fraction = 0.1  # which fraction of snps to randomly subsample
 
@@ -134,9 +134,9 @@ for epoch in range(epochs):
     print(f'Epoch {epoch + 1}, T-Loss: {round(loss_scale * train_loss)}, '
           f'T-Difference: {round(loss_scale * train_loss_diff)}, V-Loss: {round(loss_scale * test_loss)}')
     log_memory_usage()
-    # print_sample(0)
-    # print_sample(1)
-    # print_sample(2)
+    print_sample(0)
+    print_sample(1)
+    print_sample(2)
     train_loss_previous = train_loss
 
 plt.figure(figsize=(10, 5))
