@@ -24,25 +24,36 @@ batch_size = 256
 learning_rate = 0.0001
 hidden_dim, hidden_layers = 200, 10
 epochs = 100
+snp_fraction = 0.1  # which fraction of snps to randomly subsample
 
 # Load your data from a Zarr file
 print("Preparing data")
 dataset = ZarrDataset(
     zarr_file='../data/aadr_v54.1.p1_1240K_public_all_arranged.zarr',
     zarr_path='calldata/GT',
-    sample_transform=lambda genotype: torch.tensor(genotype, dtype=torch.float32),
+    sample_transform=None,
     label_file='../data/aadr_v54.1.p1_1240K_public.anno',
     label_cols=[anno.age_col, anno.long_col, anno.lat_col],
     label_transform=lambda lbl: torch.tensor(SimpleGenoNet.real_to_train_single(lbl), dtype=torch.float32),
     panda_kwargs={'sep': '\t', 'quotechar': '$', 'low_memory': False, 'on_bad_lines': 'warn', 'na_values': '..'}
 )
 
+total_snps = dataset.zarr.shape[1]
+snp_indices = np.random.choice(total_snps, size=int(total_snps * snp_fraction), replace=False)
+
+def transform_sample(zarr_genotype):
+    genotype = torch.tensor(zarr_genotype, dtype=torch.float32)
+    return genotype[snp_indices]
+
+
+dataset.sample_transform = transform_sample
+
 dataset = dataset.filter(lambda label: np.all(~np.isnan(label)) and label[0] > 100)
 
 # Create DataLoader instances for training and testing
 train_dataset, test_dataset = torch.utils.data.random_split(dataset, [0.9, 0.1], generator=generator)
 train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, generator=generator)
-test_dataloader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=True, generator=generator)
+test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, generator=generator)
 print("finished")
 
 # Initialize the model, loss function, and optimizer
@@ -87,9 +98,13 @@ train_loss_variance = 0
 for epoch in range(epochs):
     model.train()
     train_loss = 0
+    number_batches = 0
     for feature_batch, label_batch in train_dataloader:
+        print("doing batch")
         output = model(feature_batch)
         train_loss_obj = loss_function(output, label_batch)
+        train_loss += train_loss_obj.item()
+        number_batches += 1
 
         optimizer.zero_grad()
         train_loss_obj.backward()
@@ -107,7 +122,7 @@ for epoch in range(epochs):
         #     plt.show()
     scheduler.step()
     # Loss and change in loss
-    train_loss = calculate_loss(train_dataloader)
+    train_loss /= number_batches
     train_losses.append(train_loss)
     train_loss_current_diff = train_loss_previous - train_loss
     train_loss_diff = (train_loss_diff * 9 + train_loss_current_diff) / 10
@@ -115,7 +130,7 @@ for epoch in range(epochs):
     test_loss = calculate_loss(test_dataloader)
     test_losses.append(test_loss)
     # Print it out
-    loss_scale = 10e6
+    loss_scale = 1e7
     print(f'Epoch {epoch + 1}, T-Loss: {round(loss_scale * train_loss)}, '
           f'T-Difference: {round(loss_scale * train_loss_diff)}, V-Loss: {round(loss_scale * test_loss)}')
     log_memory_usage()
