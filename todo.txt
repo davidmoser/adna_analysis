@@ -1,7 +1,9 @@
 Practical first steps:
-- Ramp up input dimension with more SNPs
-  - Reading samples from ZARR to GPU in Mini-Batches, again with optimal type
-    (which? it might need float bc. later steps? whats the type in the model)
+- Check error alignment between angles and age, make error estimate
+- Do some large snp runs with slower learning rate decrease
+- Simple autoencoder: snps -> 3 dims (color) -> snps
+- Learn inverted features: age-location -> snps
+- Combine to create movie: age-location -> snps -> 3 dims
 
 Further reading:
 - Checkpoint every ten epochs (check performance), overwriting last checkpoint

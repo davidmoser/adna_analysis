@@ -22,7 +22,7 @@ generator = torch.Generator(device=device)
 # Hyperparameters
 batch_size = 256
 learning_rate = 0.0001
-hidden_dim, hidden_layers = 200, 50
+hidden_dim, hidden_layers = 1000, 10
 epochs = 100
 snp_fraction = 0.1  # which fraction of snps to randomly subsample
 
@@ -63,7 +63,7 @@ input_dim = len(sample)
 model = SimpleGenoNet(input_dim, hidden_dim, hidden_layers)
 loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = ExponentialLR(optimizer, gamma=0.9)
+scheduler = ExponentialLR(optimizer, gamma=1)
 print("finished")
 
 
@@ -100,7 +100,7 @@ for epoch in range(epochs):
     train_loss = 0
     number_batches = 0
     for feature_batch, label_batch in train_dataloader:
-        print("doing batch")
+        print(".", end="")
         output = model(feature_batch)
         train_loss_obj = loss_function(output, label_batch)
         train_loss += train_loss_obj.item()
@@ -120,6 +120,7 @@ for epoch in range(epochs):
         #     plt.title('Training and Test Loss')
         #     plt.legend()
         #     plt.show()
+    print("")
     scheduler.step()
     # Loss and change in loss
     train_loss /= number_batches
