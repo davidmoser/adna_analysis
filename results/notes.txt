@@ -15,7 +15,7 @@ Fix to loss calculation, loss below and above not comparable
 20      50          0.0002                6         less fins, but best loss yet, potential for more learning
 
 Now with batches
-#layers hidden dims learn.rate  batch   10e6xloss   comment
+#layers hidden dims learn.rate  batch   1e7xloss   comment
 20      50          0.0002      256      <500       learns much faster, down to Loss 6000 within 9 Epochs, down to <1, but very noisy
 from now on doing 100 epochs
 20      50          0.0001      256      3550
@@ -28,4 +28,8 @@ from now on doing 100 epochs
 20      50          0.00001     128     32690       looks same as for 0.0001 rate
 20      50          0.001       128     14507       noisy and flatish
 
+124k snps, 30 epochs
+#layers hidden dims learn.rate  batch   1e7xtloss   1e7xvloss   comment
+10      1000        0.0001      256     140000      250000      in 5 epochs down to a plateau, then jumpy
+20      50          0.0001      256
 
