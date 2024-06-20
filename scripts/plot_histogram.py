@@ -1,3 +1,5 @@
+# Plot a histogram of the age of the specimens
+
 import matplotlib.pyplot as plt
 import pandas as pd
 

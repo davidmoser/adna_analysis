@@ -110,16 +110,6 @@ for epoch in range(epochs):
         train_loss_obj.backward()
         optimizer.step()
 
-        # Update plot
-        # if epoch % 1 == 0:
-        #     plt.figure(figsize=(10, 5))
-        #     plt.plot(train_losses, label='Training Loss')
-        #     plt.plot(test_losses, label='Test Loss')
-        #     plt.xlabel('Epoch')
-        #     plt.ylabel('Loss')
-        #     plt.title('Training and Test Loss')
-        #     plt.legend()
-        #     plt.show()
     print("")
     scheduler.step()
     # Loss and change in loss
@@ -132,8 +122,7 @@ for epoch in range(epochs):
     test_losses.append(test_loss)
     # Print it out
     loss_scale = 1e7
-    print(f'Epoch {epoch + 1}, T-Loss: {round(loss_scale * train_loss)}, '
-          f'T-Difference: {round(loss_scale * train_loss_diff)}, V-Loss: {round(loss_scale * test_loss)}')
+    print(f'Epoch {epoch + 1}, T-Loss: {round(loss_scale * train_loss)}, V-Loss: {round(loss_scale * test_loss)}')
     log_memory_usage()
     print_sample(0)
     print_sample(1)

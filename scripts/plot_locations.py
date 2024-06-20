@@ -1,3 +1,5 @@
+# Plot the locations of the specimens on a world map
+
 import matplotlib.pyplot as plt
 import pandas as pd
 from mpl_toolkits.basemap import Basemap

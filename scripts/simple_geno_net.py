@@ -1,3 +1,9 @@
+# A simple neural network:
+# - Initial layer maps from input_dim (number of SNPs) to hidden_dim
+# - A stack of hidden_layers map from hidden_dim to hidden_dim
+# - The final layer maps from hidden_dim to the three label dims: age, longitude and latitude
+# There are static methods to map the labels to a more even distribution
+
 import numpy as np
 import torch
 import torch.nn as nn

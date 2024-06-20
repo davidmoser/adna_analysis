@@ -1,3 +1,6 @@
+# Script to train with autoencoder, down to a three dimensional space for color encoding
+# We also load the labels for location and time to investigate the results
+
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -8,6 +11,7 @@ from torch.utils.data import TensorDataset, DataLoader
 
 import anno
 from scripts.log_memory import log_memory_usage
+from simple_autoencoder import SimpleAutoencoder
 from simple_geno_net import SimpleGenoNet
 from zarr_dataset import ZarrDataset
 
@@ -21,15 +25,17 @@ generator = torch.Generator(device=device)
 
 # Hyperparameters
 batch_size = 256
-learning_rate = 0.0001
-hidden_dim, hidden_layers = 1000, 10
-epochs = 30
+learning_rate = 0.01
+hidden_dim, hidden_layers = 50, 20
+epochs = 100
+use_fraction = False
+use_filtered = True
 snp_fraction = 0.1  # which fraction of snps to randomly subsample
 
 # Load your data from a Zarr file
 print("Preparing data")
 dataset = ZarrDataset(
-    zarr_file='../data/aadr_v54.1.p1_1240K_public_all_arranged.zarr',
+    zarr_file='../data/aadr_v54.1.p1_1240K_public_filtered_arranged.zarr' if use_filtered else '../data/aadr_v54.1.p1_1240K_public_all_arranged.zarr',
     zarr_path='calldata/GT',
     sample_transform=None,
     label_file='../data/aadr_v54.1.p1_1240K_public.anno',
@@ -41,9 +47,10 @@ dataset = ZarrDataset(
 total_snps = dataset.zarr.shape[1]
 snp_indices = np.random.choice(total_snps, size=int(total_snps * snp_fraction), replace=False)
 
+
 def transform_sample(zarr_genotype):
     genotype = torch.tensor(zarr_genotype, dtype=torch.float32)
-    return genotype[snp_indices]
+    return genotype[snp_indices] if use_fraction else genotype
 
 
 dataset.sample_transform = transform_sample
@@ -57,10 +64,10 @@ test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, 
 print("finished")
 
 # Initialize the model, loss function, and optimizer
-sample, label = next(iter(dataset))
+sample, _ = next(iter(dataset))
 print(f"Creating model, Input dimension: {len(sample)}")
 input_dim = len(sample)
-model = SimpleGenoNet(input_dim, hidden_dim, hidden_layers)
+model = SimpleAutoencoder(input_dim, hidden_dim, hidden_layers, 3)
 loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 scheduler = ExponentialLR(optimizer, gamma=1)
@@ -71,20 +78,20 @@ def print_sample(index):
     model.eval()
     test_features, test_labels = next(iter(test_dataloader))
     label = test_labels[[index]]
-    prediction = model(test_features[[index]])
-    loss = loss_function(label, prediction).item()
+    latent = model.encode(test_features[[index]])
+    prediction = model.decode(latent)
+    loss = loss_function(test_features[[index]], prediction).item()
     label = SimpleGenoNet.train_to_real(label)
-    prediction = SimpleGenoNet.train_to_real(prediction)
-    print(f"Label: {label}, Prediction: {prediction}, Loss: {loss}")
+    print(f"Label: {label}, Latent: {latent}, Loss: {loss}")
 
 
 def calculate_loss(dataloader):
     model.eval()
     loss = 0
     weight = 0
-    for features, labels in dataloader:
-        output = model(features)
-        loss += loss_function(output, labels).item() * len(features)
+    for features, _ in dataloader:
+        prediction = model(features)
+        loss += loss_function(features, prediction).item() * len(features)
         weight += len(features)
     return loss / weight
 
@@ -101,8 +108,8 @@ for epoch in range(epochs):
     number_batches = 0
     for feature_batch, label_batch in train_dataloader:
         print(".", end="")
-        output = model(feature_batch)
-        train_loss_obj = loss_function(output, label_batch)
+        prediction = model(feature_batch)
+        train_loss_obj = loss_function(feature_batch, prediction)
         train_loss += train_loss_obj.item()
         number_batches += 1
 
@@ -110,16 +117,6 @@ for epoch in range(epochs):
         train_loss_obj.backward()
         optimizer.step()
 
-        # Update plot
-        # if epoch % 1 == 0:
-        #     plt.figure(figsize=(10, 5))
-        #     plt.plot(train_losses, label='Training Loss')
-        #     plt.plot(test_losses, label='Test Loss')
-        #     plt.xlabel('Epoch')
-        #     plt.ylabel('Loss')
-        #     plt.title('Training and Test Loss')
-        #     plt.legend()
-        #     plt.show()
     print("")
     scheduler.step()
     # Loss and change in loss
@@ -131,9 +128,8 @@ for epoch in range(epochs):
     test_loss = calculate_loss(test_dataloader)
     test_losses.append(test_loss)
     # Print it out
-    loss_scale = 1e7
-    print(f'Epoch {epoch + 1}, T-Loss: {round(loss_scale * train_loss)}, '
-          f'T-Difference: {round(loss_scale * train_loss_diff)}, V-Loss: {round(loss_scale * test_loss)}')
+    loss_scale = 1e4
+    print(f'Epoch {epoch + 1}, T-Loss: {round(loss_scale * train_loss)}, V-Loss: {round(loss_scale * test_loss)}')
     log_memory_usage()
     print_sample(0)
     print_sample(1)
@@ -145,10 +141,10 @@ plt.plot(np.log10(train_losses), label='Training Loss')
 plt.plot(np.log10(test_losses), label='Test Loss')
 plt.xlabel('Epoch')
 plt.ylabel('Log Loss')
-plt.title(f'Simple-Geno-Net: Dimension: {hidden_dim}, Layers: {hidden_layers}, '
+plt.title(f'Color Autoencoder: Dimension: {hidden_dim}, Layers: {hidden_layers}, '
           f'Learning rate: {learning_rate}, Batch size: {batch_size}')
 plt.legend()
 plt.show()
 
 # Save the final model
-# torch.save(model.state_dict(), 'model_final.pth')
+# torch.save(model.state_dict(), 'color_autoencoder.pth')

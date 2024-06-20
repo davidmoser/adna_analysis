@@ -1,3 +1,5 @@
+# Logging CPU and GPU memory
+
 import psutil
 import torch
 

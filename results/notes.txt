@@ -28,8 +28,15 @@ from now on doing 100 epochs
 20      50          0.00001     128     32690       looks same as for 0.0001 rate
 20      50          0.001       128     14507       noisy and flatish
 
-124k snps, 30 epochs
-#layers hidden dims learn.rate  batch   1e7xtloss   1e7xvloss   comment
-10      1000        0.0001      256     140000      250000      in 5 epochs down to a plateau, then jumpy
-20      50          0.0001      256
+Fixed a bug in the loss function, losses after are not comparable to before
 
+124k snps, 30 epochs
+#layers hidden dims learn.rate  batch   1e7xtloss   1e7xvloss   snp-set     comment
+10      1000        0.0001      256     140000      250000      0.1         in 5 epochs down to a plateau, then jumpy
+20      50          0.0001      256     130000      200000      0.1         in 10 epochs down to a plateau, less jumpy than last trial
+20      100         0.0001      256     80k-150k    150k-250k   0.1         very jumpy, also big difference between repeated run, maybe random sampling SNP is bad idea
+20      50          0.0001      256     140k        240k        filtered    (trained on 100 epochs) Similar performance in vloss as the snp-fraction-set
+20      200         0.00003     256     100k        250k        filtered    (trained on 60 epochs) Similar performance in vloss as the snp-fraction-set
+
+The filtered (choosing ca 10k unlinked SNPs) compared to the fraction chosen (fraction of 10% at random) have similar loss.
+Learning in the filtered case is much faster (10k SNPs vs 124k SNPs), but skipping the filtering is simpler and might be better with increasing data.

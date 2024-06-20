@@ -1,3 +1,7 @@
+# The traditional approach to scale down number of SNPs for further analysis:
+# Amongst a random sample of SNPs it finds the unlinked SNPs
+# This is the method used to create the 'filtered' dataset
+
 import allel
 import dask.array as da
 import numpy as np

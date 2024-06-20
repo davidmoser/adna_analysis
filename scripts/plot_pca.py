@@ -1,3 +1,5 @@
+# Do a principal component analysis (PCA) and plot it
+
 import allel
 import dask.array as da
 import matplotlib.colors as mcolors

@@ -11,9 +11,9 @@ def create_layer(in_dim, out_dim):
     return layer
 
 
-class SimpleGenoNet(nn.Module):
+class SimpleAutoencoder(nn.Module):
     def __init__(self, input_dim, hidden_dim, hidden_layers, latent_dim):
-        super(SimpleGenoNet, self).__init__()
+        super(SimpleAutoencoder, self).__init__()
         # Encoder
         # Initial layer from 'input_dim' to 'hidden_dim' dimensions
         self.encoder_initial = create_layer(input_dim, hidden_dim)
@@ -35,6 +35,11 @@ class SimpleGenoNet(nn.Module):
         self.decoder_final = create_layer(hidden_dim, input_dim)
 
     def forward(self, x):
+        x = self.encode(x)
+        x = self.decode(x)
+        return x
+
+    def encode(self, x):
         # Pass through the encoder initial layer
         x = F.relu(self.encoder_initial(x))
 
@@ -44,7 +49,9 @@ class SimpleGenoNet(nn.Module):
 
         # Pass through the encoder latent layer
         x = self.encoder_latent(x)
+        return x
 
+    def decode(self, x):
         # Pass through the decoder latent layer
         x = F.relu(self.decoder_latent(x))
 

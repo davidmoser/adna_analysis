@@ -1,3 +1,6 @@
+# Wrapper for the annotations/labels with name constants for interesting columns
+# and methods to retrieve those columns as dictionaries mapping id to column value
+
 import pandas as pd
 import os
 
