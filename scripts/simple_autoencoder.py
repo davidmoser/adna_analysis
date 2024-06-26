@@ -4,12 +4,13 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 
-def create_layer(in_dim, out_dim):
-    layer = nn.Linear(in_dim, out_dim)
-    init.xavier_uniform_(layer.weight)
-    init.zeros_(layer.bias)
-    return layer
-
+def create_layer(in_dim, out_dim, batch_norm=True):
+    layers = [nn.Linear(in_dim, out_dim)]
+    init.kaiming_uniform_(layers[0].weight, nonlinearity='relu')
+    init.zeros_(layers[0].bias)
+    if batch_norm:
+        layers.append(nn.BatchNorm1d(out_dim))
+    return nn.Sequential(*layers)
 
 class SimpleAutoencoder(nn.Module):
     def __init__(self, input_dim, hidden_dim, hidden_layers, latent_dim):
@@ -22,7 +23,7 @@ class SimpleAutoencoder(nn.Module):
         self.encoder_stack = nn.ModuleList([create_layer(hidden_dim, hidden_dim) for _ in range(hidden_layers)])
 
         # To latent space
-        self.encoder_latent = create_layer(hidden_dim, latent_dim)
+        self.encoder_latent = create_layer(hidden_dim, latent_dim, batch_norm=False)  # No batch norm in the latent layer
 
         # Decoder
         # To hidden dim
@@ -32,7 +33,7 @@ class SimpleAutoencoder(nn.Module):
         self.decoder_stack = nn.ModuleList([create_layer(hidden_dim, hidden_dim) for _ in range(hidden_layers)])
 
         # Final layer from 'hidden_dim' to 'input_dim' dimensions
-        self.decoder_final = create_layer(hidden_dim, input_dim)
+        self.decoder_final = create_layer(hidden_dim, input_dim, batch_norm=False)  # No batch norm in the final layer
 
     def forward(self, x):
         x = self.encode(x)

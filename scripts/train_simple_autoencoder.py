@@ -27,7 +27,7 @@ generator = torch.Generator(device=device)
 batch_size = 256
 learning_rate = 0.01
 hidden_dim, hidden_layers = 50, 20
-epochs = 1
+epochs = 10
 use_fraction = False
 use_filtered = True
 snp_fraction = 0.1  # which fraction of snps to randomly subsample
