@@ -11,6 +11,7 @@ from torch.utils.data import TensorDataset, DataLoader
 
 import anno
 from scripts.log_memory import log_memory_usage
+from scripts.utils import calculate_loss
 from simple_autoencoder import SimpleAutoencoder
 from simple_geno_net import SimpleGenoNet
 from zarr_dataset import ZarrDataset
@@ -85,17 +86,6 @@ def print_sample(index):
     print(f"Label: {label}, Latent: {latent}, Loss: {loss}")
 
 
-def calculate_loss(dataloader):
-    model.eval()
-    loss = 0
-    weight = 0
-    for features, _ in dataloader:
-        prediction = model(features)
-        loss += loss_function(features, prediction).item() * len(features)
-        weight += len(features)
-    return loss / weight
-
-
 # Training loop
 train_losses, test_losses = [], []
 
@@ -125,7 +115,7 @@ for epoch in range(epochs):
     train_loss_current_diff = train_loss_previous - train_loss
     train_loss_diff = (train_loss_diff * 9 + train_loss_current_diff) / 10
     # Validation loss
-    test_loss = calculate_loss(test_dataloader)
+    test_loss = calculate_loss(model, test_dataloader, loss_function)
     test_losses.append(test_loss)
     # Print it out
     loss_scale = 1e4
