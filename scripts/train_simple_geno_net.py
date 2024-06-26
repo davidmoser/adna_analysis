@@ -21,15 +21,17 @@ generator = torch.Generator(device=device)
 
 # Hyperparameters
 batch_size = 256
-learning_rate = 0.0001
+learning_rate = 0.01
 hidden_dim, hidden_layers = 100, 20
 epochs = 30
+use_fraction = False
+use_filtered = True
 snp_fraction = 0.1  # which fraction of snps to randomly subsample
 
 # Load your data from a Zarr file
 print("Preparing data")
 dataset = ZarrDataset(
-    zarr_file='../data/aadr_v54.1.p1_1240K_public_all_arranged.zarr',
+    zarr_file='../data/aadr_v54.1.p1_1240K_public_filtered_arranged.zarr' if use_filtered else '../data/aadr_v54.1.p1_1240K_public_all_arranged.zarr',
     zarr_path='calldata/GT',
     sample_transform=None,
     label_file='../data/aadr_v54.1.p1_1240K_public.anno',
@@ -41,9 +43,10 @@ dataset = ZarrDataset(
 total_snps = dataset.zarr.shape[1]
 snp_indices = np.random.choice(total_snps, size=int(total_snps * snp_fraction), replace=False)
 
+
 def transform_sample(zarr_genotype):
     genotype = torch.tensor(zarr_genotype, dtype=torch.float32)
-    return genotype[snp_indices]
+    return genotype[snp_indices] if use_fraction else genotype
 
 
 dataset.sample_transform = transform_sample

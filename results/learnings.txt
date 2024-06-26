@@ -9,3 +9,6 @@
   optimum.
 - Moving tensors between RAM and GPU-RAM, also need to have generators (for random numbers) on correct device
 - Can import and debug in python console (looked at pytorch default_collate)
+
+Autoencoder
+- Latent space collapsed to one dimension even after one epoch, normalization issue, batch normalization fixed it

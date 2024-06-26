@@ -1,9 +1,3 @@
-# A simple neural network:
-# - Initial layer maps from input_dim (number of SNPs) to hidden_dim
-# - A stack of hidden_layers map from hidden_dim to hidden_dim
-# - The final layer maps from hidden_dim to the three label dims: age, longitude and latitude
-# There are static methods to map the labels to a more even distribution
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -11,25 +5,27 @@ import torch.nn.functional as F
 import torch.nn.init as init
 
 
+def create_layer(in_dim, out_dim, batch_norm=False):
+    layers = [nn.Linear(in_dim, out_dim)]
+    init.kaiming_uniform_(layers[0].weight, nonlinearity='relu')
+    init.zeros_(layers[0].bias)
+    if batch_norm:
+        layers.append(nn.BatchNorm1d(out_dim))
+    return nn.Sequential(*layers)
+
+
 class SimpleGenoNet(nn.Module):
-    def __init__(self, input_dim, hidden_dim, hidden_layers):
+    def __init__(self, input_dim, hidden_dim, hidden_layers, batch_norm=False):
         super(SimpleGenoNet, self).__init__()
         # Initial layer from n to m dimensions
-        self.initial_layer = nn.Linear(input_dim, hidden_dim)
-        init.xavier_uniform_(self.initial_layer.weight)
-        init.zeros_(self.initial_layer.bias)
+        self.initial_layer = create_layer(input_dim, hidden_dim, batch_norm)
 
         # Intermediate layers (k of them, each from m to m dimensions)
-        self.intermediate_layers = nn.ModuleList()
-        for _ in range(hidden_layers):
-            layer = nn.Linear(hidden_dim, hidden_dim)
-            init.xavier_uniform_(layer.weight)
-            init.zeros_(layer.bias)
-            self.intermediate_layers.append(layer)
+        self.intermediate_layers = nn.ModuleList([create_layer(hidden_dim, hidden_dim, batch_norm) for _ in range(hidden_layers)])
 
-        # Final layer to 3 dimensions
+        # Final layer to 3 dimensions, no batch norm here
         self.final_layer = nn.Linear(hidden_dim, 3)
-        init.xavier_uniform_(self.final_layer.weight)
+        init.kaiming_uniform_(self.final_layer.weight, nonlinearity='relu')
         init.zeros_(self.final_layer.bias)
 
     def forward(self, x):
@@ -43,7 +39,6 @@ class SimpleGenoNet(nn.Module):
         # Pass through the final layer
         x = self.final_layer(x)
         # Learn tanh for the three outputs
-        # for conversion to actual age and coordinates see below
         x = torch.tanh(x)
         return x
 

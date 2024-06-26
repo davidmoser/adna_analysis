@@ -40,3 +40,4 @@ Fixed a bug in the loss function, losses after are not comparable to before
 
 The filtered (choosing ca 10k unlinked SNPs) compared to the fraction chosen (fraction of 10% at random) have similar loss.
 Learning in the filtered case is much faster (10k SNPs vs 124k SNPs), but skipping the filtering is simpler and might be better with increasing data.
+Also did learning with batch normalization, requires much higher learning rates and results are slightly worse, 200k-300k.
