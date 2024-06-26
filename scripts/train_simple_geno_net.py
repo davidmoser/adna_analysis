@@ -1,26 +1,15 @@
 # Script to train with simple genonet, given SNPs predict age and location
 
-import matplotlib.pyplot as plt
-import numpy as np
-import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import ExponentialLR
-from torch.utils.data import TensorDataset, DataLoader
 
-import anno
 from scripts.log_memory import log_memory_usage
-from scripts.utils import calculate_loss
+from scripts.utils import calculate_loss, load_data, use_device, plot_loss
 from simple_geno_net import SimpleGenoNet
-from zarr_dataset import ZarrDataset
 
 # device_name = "cuda" if torch.cuda.is_available() else "cpu"
-device_name = 'cuda'
-print(f"Using device: {device_name}")
-
-device = torch.device(device_name)
-torch.set_default_device(device)
-generator = torch.Generator(device=device)
+generator = use_device("cuda")
 
 # Hyperparameters
 batch_size = 256
@@ -32,35 +21,7 @@ use_filtered = True
 snp_fraction = 0.1  # which fraction of snps to randomly subsample
 
 # Load your data from a Zarr file
-print("Preparing data")
-dataset = ZarrDataset(
-    zarr_file='../data/aadr_v54.1.p1_1240K_public_filtered_arranged.zarr' if use_filtered else '../data/aadr_v54.1.p1_1240K_public_all_arranged.zarr',
-    zarr_path='calldata/GT',
-    sample_transform=None,
-    label_file='../data/aadr_v54.1.p1_1240K_public.anno',
-    label_cols=[anno.age_col, anno.long_col, anno.lat_col],
-    label_transform=lambda lbl: torch.tensor(SimpleGenoNet.real_to_train_single(lbl), dtype=torch.float32),
-    panda_kwargs={'sep': '\t', 'quotechar': '$', 'low_memory': False, 'on_bad_lines': 'warn', 'na_values': '..'}
-)
-
-total_snps = dataset.zarr.shape[1]
-snp_indices = np.random.choice(total_snps, size=int(total_snps * snp_fraction), replace=False)
-
-
-def transform_sample(zarr_genotype):
-    genotype = torch.tensor(zarr_genotype, dtype=torch.float32)
-    return genotype[snp_indices] if use_fraction else genotype
-
-
-dataset.sample_transform = transform_sample
-
-dataset = dataset.filter(lambda label: np.all(~np.isnan(label)) and 100 < label[0] <= 10000)
-
-# Create DataLoader instances for training and testing
-train_dataset, test_dataset = torch.utils.data.random_split(dataset, [0.9, 0.1], generator=generator)
-train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, generator=generator)
-test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, generator=generator)
-print("finished")
+dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction)
 
 # Initialize the model, loss function, and optimizer
 sample, label = next(iter(dataset))
@@ -124,15 +85,8 @@ for epoch in range(epochs):
     print_sample(2)
     train_loss_previous = train_loss
 
-plt.figure(figsize=(10, 5))
-plt.plot(np.log10(train_losses), label='Training Loss')
-plt.plot(np.log10(test_losses), label='Test Loss')
-plt.xlabel('Epoch')
-plt.ylabel('Log Loss')
-plt.title(f'Simple-Geno-Net: Dimension: {hidden_dim}, Layers: {hidden_layers}, '
-          f'Learning rate: {learning_rate}, Batch size: {batch_size}')
-plt.legend()
-plt.show()
+plot_loss(train_losses, test_losses, f'Simple-Geno-Net: Dimension: {hidden_dim}, Layers: {hidden_layers}, '
+                                     f'Learning rate: {learning_rate}, Batch size: {batch_size}')
 
 # Save the final model
 # torch.save(model.state_dict(), '../models/simple_geno_net.pth')
