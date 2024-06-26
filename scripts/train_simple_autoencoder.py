@@ -27,7 +27,7 @@ generator = torch.Generator(device=device)
 batch_size = 256
 learning_rate = 0.01
 hidden_dim, hidden_layers = 50, 20
-epochs = 100
+epochs = 1
 use_fraction = False
 use_filtered = True
 snp_fraction = 0.1  # which fraction of snps to randomly subsample
@@ -146,5 +146,40 @@ plt.title(f'Color Autoencoder: Dimension: {hidden_dim}, Layers: {hidden_layers},
 plt.legend()
 plt.show()
 
+
 # Save the final model
 # torch.save(model.state_dict(), 'color_autoencoder.pth')
+
+# Function to extract latent representations
+def extract_latent_representations(dataloader, model):
+    model.eval()
+    latent_space = []
+    labels = []
+    with torch.no_grad():
+        for features, label in dataloader:
+            latent = model.encode(features)
+            latent_space.append(latent.cpu().numpy())
+            labels.append(label.cpu().numpy())
+    latent_space = np.concatenate(latent_space, axis=0)
+    labels = np.concatenate(labels, axis=0)
+    return latent_space, labels
+
+
+# Extract latent representations for train and test datasets
+train_latent_space, train_labels = extract_latent_representations(train_dataloader, model)
+test_latent_space, test_labels = extract_latent_representations(test_dataloader, model)
+
+# Combine train and test data for visualization
+latent_space = np.concatenate((train_latent_space, test_latent_space), axis=0)
+labels = np.concatenate((train_labels, test_labels), axis=0)
+
+# 3D Scatter plot of the latent space
+fig = plt.figure(figsize=(10, 7))
+ax = fig.add_subplot(111, projection='3d')
+sc = ax.scatter(latent_space[:, 0], latent_space[:, 1], latent_space[:, 2], c=labels[:, 0], cmap='viridis', marker='o')
+plt.colorbar(sc, label='Label')
+ax.set_xlabel('Latent Dimension 1')
+ax.set_ylabel('Latent Dimension 2')
+ax.set_zlabel('Latent Dimension 3')
+plt.title('3D Scatter Plot of Latent Space')
+plt.show()
