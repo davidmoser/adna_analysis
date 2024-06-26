@@ -26,8 +26,8 @@ generator = torch.Generator(device=device)
 # Hyperparameters
 batch_size = 256
 learning_rate = 0.01
-hidden_dim, hidden_layers = 50, 20
-epochs = 10
+hidden_dim, hidden_layers = 100, 20
+epochs = 3
 use_fraction = False
 use_filtered = True
 snp_fraction = 0.1  # which fraction of snps to randomly subsample
@@ -183,3 +183,6 @@ ax.set_ylabel('Latent Dimension 2')
 ax.set_zlabel('Latent Dimension 3')
 plt.title('3D Scatter Plot of Latent Space')
 plt.show()
+
+# Save the final model
+torch.save(model.state_dict(), '../models/autoencoder.pth')

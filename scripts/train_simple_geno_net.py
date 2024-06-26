@@ -145,4 +145,4 @@ plt.legend()
 plt.show()
 
 # Save the final model
-# torch.save(model.state_dict(), 'model_final.pth')
+# torch.save(model.state_dict(), '../models/simple_geno_net.pth')
