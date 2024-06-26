@@ -185,4 +185,4 @@ plt.title('3D Scatter Plot of Latent Space')
 plt.show()
 
 # Save the final model
-torch.save(model.state_dict(), '../models/autoencoder.pth')
+torch.save(model.state_dict(), '../models/simple_autoencoder.pth')
