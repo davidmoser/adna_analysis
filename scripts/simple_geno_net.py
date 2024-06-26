@@ -15,7 +15,7 @@ def create_layer(in_dim, out_dim, batch_norm=False):
 
 
 class SimpleGenoNet(nn.Module):
-    def __init__(self, input_dim, hidden_dim, hidden_layers, batch_norm=False):
+    def __init__(self, input_dim, output_dim, hidden_dim, hidden_layers, batch_norm=False):
         super(SimpleGenoNet, self).__init__()
         # Initial layer from n to m dimensions
         self.initial_layer = create_layer(input_dim, hidden_dim, batch_norm)
@@ -24,7 +24,7 @@ class SimpleGenoNet(nn.Module):
         self.intermediate_layers = nn.ModuleList([create_layer(hidden_dim, hidden_dim, batch_norm) for _ in range(hidden_layers)])
 
         # Final layer to 3 dimensions, no batch norm here
-        self.final_layer = nn.Linear(hidden_dim, 3)
+        self.final_layer = nn.Linear(hidden_dim, output_dim)
         init.kaiming_uniform_(self.final_layer.weight, nonlinearity='relu')
         init.zeros_(self.final_layer.bias)
 

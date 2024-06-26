@@ -6,8 +6,6 @@ Practical first steps:
 - Combine to create movie: age-location -> snps -> 3 dims
 
 
-LATER Let's split the script into three separate files: one for loading and initializing, one for training, and one for plotting. We will also create a class for the hyperparameters.
-
 Further reading:
 - Checkpoint every ten epochs (check performance), overwriting last checkpoint
 - Look at optimizers (Adam DONE)

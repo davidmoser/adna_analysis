@@ -1,3 +1,5 @@
+# Script to train with simple genonet, given SNPs predict age and location
+
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -21,7 +23,7 @@ generator = torch.Generator(device=device)
 
 # Hyperparameters
 batch_size = 256
-learning_rate = 0.01
+learning_rate = 0.0001
 hidden_dim, hidden_layers = 100, 20
 epochs = 30
 use_fraction = False
@@ -63,7 +65,7 @@ print("finished")
 sample, label = next(iter(dataset))
 print(f"Creating model, Input dimension: {len(sample)}")
 input_dim = len(sample)
-model = SimpleGenoNet(input_dim, hidden_dim, hidden_layers)
+model = SimpleGenoNet(input_dim, 3, hidden_dim, hidden_layers)
 loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 scheduler = ExponentialLR(optimizer, gamma=1)
