@@ -15,16 +15,19 @@ def create_layer(in_dim, out_dim, batch_norm=False):
 
 
 class SimpleGenoNet(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_dim, hidden_layers, batch_norm=False):
+    def __init__(self, input_dim, output_dim, hidden_dim, hidden_layers, final_fun=torch.tanh,
+                 batch_norm=False):
         super(SimpleGenoNet, self).__init__()
         # Initial layer from n to m dimensions
         self.initial_layer = create_layer(input_dim, hidden_dim, batch_norm)
 
         # Intermediate layers (k of them, each from m to m dimensions)
-        self.intermediate_layers = nn.ModuleList([create_layer(hidden_dim, hidden_dim, batch_norm) for _ in range(hidden_layers)])
+        self.intermediate_layers = nn.ModuleList(
+            [create_layer(hidden_dim, hidden_dim, batch_norm) for _ in range(hidden_layers)])
 
         # Final layer to 3 dimensions, no batch norm here
         self.final_layer = nn.Linear(hidden_dim, output_dim)
+        self.final_fun = final_fun
         init.kaiming_uniform_(self.final_layer.weight, nonlinearity='relu')
         init.zeros_(self.final_layer.bias)
 
@@ -39,7 +42,7 @@ class SimpleGenoNet(nn.Module):
         # Pass through the final layer
         x = self.final_layer(x)
         # Learn tanh for the three outputs
-        x = torch.tanh(x)
+        x = self.final_fun(x)
         return x
 
     # Post-processing for output ranges

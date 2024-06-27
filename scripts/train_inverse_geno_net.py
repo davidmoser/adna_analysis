@@ -28,7 +28,7 @@ dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, us
 sample, label = next(iter(dataset))
 print(f"Creating model, Input dimension: 3, Output dimension: {len(sample)}")
 output_dim = len(sample)
-model = SimpleGenoNet(3, output_dim, hidden_dim, hidden_layers)
+model = SimpleGenoNet(3, output_dim, hidden_dim, hidden_layers, final_fun=lambda x: 2 * torch.tanh(x))
 loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 scheduler = ExponentialLR(optimizer, gamma=0.95)
@@ -38,11 +38,26 @@ print("finished")
 def print_sample(index):
     model.eval()
     test_features, test_labels = next(iter(test_dataloader))
-    label = test_labels[[index]]
-    label = SimpleGenoNet.train_to_real(label)
-    prediction = model(test_features[[index]])
-    undet_count = np.sum(np.abs(prediction + 1) <= 0.1)
-    print(f"Label: {label}, Undet-Count: {undet_count}")
+    # label = test_labels[[index]]
+    # label = SimpleGenoNet.train_to_real(label)
+    prediction = model(test_labels[[index]])
+
+    def count(genotypes, value):
+        return np.sum((value - 0.5 < genotypes) & (genotypes <= value + 0.5))
+
+    def print_counts(genotypes):
+        undet_count = count(genotypes, -2)
+        homozygous_ref = count(genotypes, 0)
+        heterozygous = count(genotypes, 1)
+        homozygous_alt = count(genotypes, 2)
+        out_count = genotypes.shape[1] - undet_count - homozygous_ref - heterozygous - homozygous_alt
+        print(f"Undet: {undet_count}, Homozyg.Ref.: {homozygous_ref}, "
+              f"Heterozyg.: {heterozygous}, Homozyg.Alt.: {homozygous_alt}, Outside: {out_count}")
+
+    print("Original ", end='')
+    print_counts(test_features[[index]].cpu().numpy())
+    print("Prediction ", end='')
+    print_counts(prediction.detach().cpu().numpy())
 
 
 # Training loop
