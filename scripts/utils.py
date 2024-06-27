@@ -27,7 +27,7 @@ def calculate_loss(model, dataloader, loss_function, invert=False):
     return loss / weight
 
 
-def load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction):
+def load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction, label_filter=None):
     print("Preparing data")
     dataset = ZarrDataset(
         zarr_file='../data/aadr_v54.1.p1_1240K_public_filtered_arranged.zarr' if use_filtered else '../data/aadr_v54.1.p1_1240K_public_all_arranged.zarr',
@@ -48,7 +48,7 @@ def load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction):
 
     dataset.sample_transform = transform_sample
 
-    dataset = dataset.filter(lambda label: np.all(~np.isnan(label)) and 100 < label[0] <= 10000)
+    dataset = dataset.filter(label_filter or (lambda label: np.all(~np.isnan(label)) and 100 < label[0] <= 10000))
 
     # Create DataLoader instances for training and testing
     train_dataset, test_dataset = torch.utils.data.random_split(dataset, [0.9, 0.1], generator=generator)

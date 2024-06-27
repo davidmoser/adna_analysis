@@ -10,7 +10,7 @@ class ZarrDataset(Dataset):
         df = pd.read_csv(label_file, **(panda_kwargs or {}))
         self.labels = df[label_cols].values
         self.zarr = zarr.open(zarr_file, mode='r')[zarr_path]
-        self.sample_transform = sample_transform
+        self.sample_transform = sample_transform or (lambda sample: sample)
         self.label_transform = label_transform or (lambda row: row)
 
     def __len__(self):
