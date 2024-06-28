@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torch.nn.functional as F
 from torch.utils.data import TensorDataset, DataLoader
 
 import anno
@@ -27,7 +28,7 @@ def calculate_loss(model, dataloader, loss_function, invert=False):
     return loss / weight
 
 
-def load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction, label_filter=None):
+def load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction, label_filter=None, flattened=True):
     print("Preparing data")
     dataset = ZarrDataset(
         zarr_file='../data/aadr_v54.1.p1_1240K_public_filtered_arranged.zarr' if use_filtered else '../data/aadr_v54.1.p1_1240K_public_all_arranged.zarr',
@@ -42,9 +43,26 @@ def load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction, l
     total_snps = dataset.zarr.shape[1]
     snp_indices = np.random.choice(total_snps, size=int(total_snps * snp_fraction), replace=False)
 
+    def to_one_hot(genotypes, num_classes=4):
+        # Convert the genotypes tensor to a new tensor with mapped values
+        genotypes_mapped = torch.full_like(genotypes, -1, dtype=torch.long)
+
+        # Map the values using vectorized operations
+        genotypes_mapped = torch.where(genotypes == -2, 0, genotypes_mapped)
+        genotypes_mapped = torch.where(genotypes == 0, 1, genotypes_mapped)
+        genotypes_mapped = torch.where(genotypes == 1, 2, genotypes_mapped)
+        genotypes_mapped = torch.where(genotypes == 2, 3, genotypes_mapped)
+
+        # Use torch.nn.functional.one_hot to create the one-hot matrix
+        one_hot_matrix = F.one_hot(genotypes_mapped, num_classes=num_classes)
+
+        return one_hot_matrix
+
     def transform_sample(zarr_genotype):
         genotype = torch.tensor(zarr_genotype, dtype=torch.float32)
-        return genotype[snp_indices] if use_fraction else genotype
+        filtered_genotype = genotype[snp_indices] if use_fraction else genotype
+        one_hot_genotype = to_one_hot(filtered_genotype).to(dtype=torch.float32)
+        return one_hot_genotype.view(-1) if flattened else one_hot_genotype
 
     dataset.sample_transform = transform_sample
 

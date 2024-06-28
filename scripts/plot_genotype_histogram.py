@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 
 from scripts.utils import use_device, load_data
 
@@ -10,6 +11,7 @@ max_age = 10000
 # Load the Zarr array
 generator = use_device("cpu")
 zarr_data, _, _ = load_data(1000, generator, use_filtered, False, 0,
+                            flattened=False,
                             label_filter=lambda label: np.all(~np.isnan(label)) and min_age < label[0] <= max_age)
 
 # Get the shape of the array
@@ -22,11 +24,10 @@ counts = np.zeros((num_samples, 4), dtype=int)
 # Iterate through the samples
 i = 0
 for snps, labels in zarr_data:
-    snps = snps.numpy()
-    counts[i, 0] = np.sum(snps == -2)  # Undetermined (-2)
-    counts[i, 1] = np.sum(snps == 0)  # Homozygous Reference (0)
-    counts[i, 2] = np.sum(snps == 1)  # Heterozygous (1)
-    counts[i, 3] = np.sum(snps == 2)  # Homozygous Alternative (2)
+    if i % 100 == 0:
+        print(f"Sample {i}")
+    cs = torch.sum(snps, dim=0)
+    counts[i] = cs.numpy()
     i += 1
 
 # Plot histograms for each possibility
