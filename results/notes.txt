@@ -32,8 +32,8 @@ Fixed a bug in the loss function, losses after are not comparable to before
 
 124k snps, 30 epochs
 #layers hidden dims learn.rate  batch   1e7xtloss   1e7xvloss   snp-set     comment
-10      1000        0.0001      256     140000      250000      0.1         in 5 epochs down to a plateau, then jumpy
-20      50          0.0001      256     130000      200000      0.1         in 10 epochs down to a plateau, less jumpy than last trial
+10      1000        0.0001      256     140k        250k        0.1         in 5 epochs down to a plateau, then jumpy
+20      50          0.0001      256     130k        200k        0.1         in 10 epochs down to a plateau, less jumpy than last trial
 20      100         0.0001      256     80k-150k    150k-250k   0.1         very jumpy, also big difference between repeated run, maybe random sampling SNP is bad idea
 20      50          0.0001      256     140k        240k        filtered    (trained on 100 epochs) Similar performance in vloss as the snp-fraction-set
 20      200         0.00003     256     100k        250k        filtered    (trained on 60 epochs) Similar performance in vloss as the snp-fraction-set
@@ -41,3 +41,41 @@ Fixed a bug in the loss function, losses after are not comparable to before
 The filtered (choosing ca 10k unlinked SNPs) compared to the fraction chosen (fraction of 10% at random) have similar loss.
 Learning in the filtered case is much faster (10k SNPs vs 124k SNPs), but skipping the filtering is simpler and might be better with increasing data.
 Also did learning with batch normalization, requires much higher learning rates and results are slightly worse, 200k-300k.
+
+Switched to one-hot encoding
+#layers hidden dims learnrate/g batch   1e7xtloss   1e7xvloss   snp-set      epochs     comment
+10      10          0.0001/1    256     314k        370k        filtered     30         not finished learning
+10      10          0.001/.95   256     385k        415k        filtered     30         finished learning ... why higher?
+1       100         0.0001/1    256     55k         210k        filtered     30         smooth curve, test-learning done after 10 epochs
+2       100         0.0001/1    256     55k         220k        filtered     30         dito
+5       100         0.0001/1    256     40k         230k        filtered     30
+10      100         0.0001/1    256     55k         170k        filtered     30
+20      100         0.0001/1    256     75k         175k        filtered     30
+40      100         0.0001/1    256     130k        210k        filtered     30         jumpy again, might learn some more
+40      100         0.00001/1   256     240k        370k        filtered     30         not jumpy, but worse results
+1       50          0.0001/1    256     91k         215k        filtered     30
+2       50          0.0001/1    256     66k         245k        filtered     30
+5       50          0.0001/1    256     70k         195k        filtered     30         quite good for 5 layers, still a bit jumpy
+10      50          0.0001/1    256     75k         215k        filtered     30         might still learn some more
+20      50          0.0001/1    256     115k        180k        filtered     30         jumpy, might still learn some more
+30      50          0.00005/1   256     95k         190k        filtered     30         jumpy, might still learn some more
+100     50          0.001/1     256     -           -           filtered     30         too jumpy, overshoots
+100     50          0.0001/1    256     128k        230k        filtered     30         still jumpy, approximate values
+1       20          0.0001/1    256     150k        280k        filtered     30
+2       20          0.0001/1    256     160k        275k        filtered     30         still learning
+2       20          0.0002/1    256     120k        220k        filtered     30
+5       20          0.0001/1    256     155k        230k        filtered     30
+10      20          0.0001/1    256     135k        220k        filtered     30
+20      20          0.0001/1    256     160k        230k        filtered     30         doesn't look finished (more epochs get it down to 200k)
+10      150         0.0001/1    256     50k         155k        filtered     30
+10      200         0.0001/1    256     45k         170k        filtered     30
+10      250         0.0001/1    256     45k         175k        filtered     30
+20      150         0.00005/1   256     45k         160k        filtered     50         increasing epochs, decreasing learning rate for depth 20
+30      100         0.00003/1   256     40k         160k        filtered     70
+30      100         0.00003/.98 256     20k         225k        filtered     100     trying decreasing learning rate, many epochs
+30      150         0.00003/.98 256     20k         225k        filtered     100
+5       150         0.0001/1    256     50k         225k        filtered     30
+15      150         0.0001/1    256     20k         160k        filtered     50
+10      150         0.0001/1    256     4k          147k        filtered     200      large spike at 135epoch, then back down
+10      150         0.001/1     256     9k          160k        filtered     200      with batch norm on, smoother
+10      150         0.001/1     256     2k          140k        filtered     1000     with batch norm on,

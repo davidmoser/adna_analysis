@@ -13,12 +13,13 @@ generator = use_device("cuda")
 
 # Hyperparameters
 batch_size = 256
-learning_rate = 0.0001
-hidden_dim, hidden_layers = 100, 20
-epochs = 30
+learning_rate = 0.001
+hidden_dim, hidden_layers = 150, 10
+epochs = 1000
 use_fraction = False
 use_filtered = True
 snp_fraction = 0.1  # which fraction of snps to randomly subsample
+gamma = 1  # Learning rate decrease per epoch
 
 # Load your data from a Zarr file
 dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction)
@@ -27,16 +28,16 @@ dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, us
 sample, label = next(iter(dataset))
 print(f"Creating model, Input dimension: {len(sample)}")
 input_dim = len(sample)
-model = SimpleGenoNet(input_dim, 3, hidden_dim, hidden_layers)
+model = SimpleGenoNet(input_dim, 3, hidden_dim, hidden_layers, batch_norm=True)
 loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = ExponentialLR(optimizer, gamma=1)
+scheduler = ExponentialLR(optimizer, gamma=gamma)
 print("finished")
 
 
-def print_sample(index):
+def print_sample(index, dataloader):
     model.eval()
-    test_features, test_labels = next(iter(test_dataloader))
+    test_features, test_labels = next(iter(dataloader))
     label = test_labels[[index]]
     prediction = model(test_features[[index]])
     loss = loss_function(label, prediction).item()
@@ -80,9 +81,12 @@ for epoch in range(epochs):
     loss_scale = 1e7
     print(f'Epoch {epoch + 1}, T-Loss: {round(loss_scale * train_loss)}, V-Loss: {round(loss_scale * test_loss)}')
     log_memory_usage()
-    print_sample(0)
-    print_sample(1)
-    print_sample(2)
+    print_sample(0, test_dataloader)
+    print_sample(1, test_dataloader)
+    print_sample(2, test_dataloader)
+    print_sample(0, train_dataloader)
+    print_sample(1, train_dataloader)
+    print_sample(2, train_dataloader)
     train_loss_previous = train_loss
 
 plot_loss(train_losses, test_losses, f'Simple-Geno-Net: Dimension: {hidden_dim}, Layers: {hidden_layers}, '
