@@ -17,13 +17,13 @@ def use_device(device_name):
     return generator
 
 
-def calculate_loss(model, dataloader, loss_function, invert=False):
+def calculate_loss(model, dataloader, loss_function, invert_input=False, invert_output=False):
     model.eval()
     loss = 0
     weight = 0
     for features, labels in dataloader:
-        output = model(labels if invert else features)
-        loss += loss_function(output, features if invert else labels).item() * len(features)
+        output = model(labels if invert_input else features)
+        loss += loss_function(output, features if invert_output else labels).item() * len(features)
         weight += len(features)
     return loss / weight
 
@@ -85,3 +85,42 @@ def plot_loss(train_losses, test_losses, title):
     plt.title(title)
     plt.legend()
     plt.show()
+
+
+# Optimized custom cross-entropy loss for 4D one-hot vectors
+def snp_cross_entropy_loss(output, target):
+    # Reshape output and target tensors
+    output = output.view(-1, 4)
+    target = target.view(-1, 4)
+
+    # Convert one-hot target to class indices
+    target_indices = torch.argmax(target, dim=1)
+
+    # Compute cross-entropy loss
+    loss = torch.nn.CrossEntropyLoss(reduction='mean')(output, target_indices)
+
+    return loss
+
+
+def print_genotype_predictions(model, dataloader, invert=False):
+    print_genotype_prediction(model, dataloader, 0, invert)
+    print_genotype_prediction(model, dataloader, 1, invert)
+    print_genotype_prediction(model, dataloader, 2, invert)
+
+
+def print_genotype_prediction(model, dataloader, index, invert=False):
+    model.eval()
+    features, labels = next(iter(dataloader))
+    model_input = labels if invert else features
+    logits = model(model_input[[index]]).view(-1, 4)
+    p = torch.nn.functional.softmax(logits, dim=1)
+
+    def print_counts(genotypes):
+        counts = genotypes.view(-1, 4).sum(dim=0)
+        print(f"Undet: {counts[0]:.0f}, Homozyg.Ref.: {counts[1]:.0f}, "
+              f"Heterozyg.: {counts[2]:.0f}, Homozyg.Alt.: {counts[3]:.0f}")
+
+    print("Original ", end='')
+    print_counts(features[[index]])
+    print("Prediction ", end='')
+    print_counts(p.detach())
