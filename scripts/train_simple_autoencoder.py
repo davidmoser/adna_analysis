@@ -4,14 +4,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import ExponentialLR
 
 from scripts.log_memory import log_memory_usage
-from scripts.utils import calculate_loss, load_data, plot_loss
+from scripts.utils import calculate_loss, load_data, plot_loss, snp_cross_entropy_loss, print_genotype_predictions
 from simple_autoencoder import SimpleAutoencoder
-from simple_geno_net import SimpleGenoNet
 
 # device_name = "cuda" if torch.cuda.is_available() else "cpu"
 device_name = 'cuda'
@@ -24,11 +22,12 @@ generator = torch.Generator(device=device)
 # Hyperparameters
 batch_size = 256
 learning_rate = 0.01
-hidden_dim, hidden_layers = 100, 20
-epochs = 3
+hidden_dim, hidden_layers = 150, 10
+epochs = 20
 use_fraction = False
 use_filtered = True
 snp_fraction = 0.1  # which fraction of snps to randomly subsample
+gamma = 1
 
 # Load your data from a Zarr file
 dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction)
@@ -38,22 +37,10 @@ sample, _ = next(iter(dataset))
 print(f"Creating model, Input dimension: {len(sample)}")
 input_dim = len(sample)
 model = SimpleAutoencoder(input_dim, hidden_dim, hidden_layers, 3)
-loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks
+loss_function = snp_cross_entropy_loss
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = ExponentialLR(optimizer, gamma=1)
+scheduler = ExponentialLR(optimizer, gamma=gamma)
 print("finished")
-
-
-def print_sample(index):
-    model.eval()
-    test_features, test_labels = next(iter(test_dataloader))
-    label = test_labels[[index]]
-    latent = model.encode(test_features[[index]])
-    prediction = model.decode(latent)
-    loss = loss_function(test_features[[index]], prediction).item()
-    label = SimpleGenoNet.train_to_real(label)
-    print(f"Label: {label}, Latent: {latent}, Loss: {loss}")
-
 
 # Training loop
 train_losses, test_losses = [], []
@@ -65,10 +52,10 @@ for epoch in range(epochs):
     model.train()
     train_loss = 0
     number_batches = 0
-    for feature_batch, label_batch in train_dataloader:
+    for feature_batch, _ in train_dataloader:
         print(".", end="")
         prediction = model(feature_batch)
-        train_loss_obj = loss_function(feature_batch, prediction)
+        train_loss_obj = loss_function(prediction, feature_batch)
         train_loss += train_loss_obj.item()
         number_batches += 1
 
@@ -84,15 +71,13 @@ for epoch in range(epochs):
     train_loss_current_diff = train_loss_previous - train_loss
     train_loss_diff = (train_loss_diff * 9 + train_loss_current_diff) / 10
     # Validation loss
-    test_loss = calculate_loss(model, test_dataloader, loss_function)
+    test_loss = calculate_loss(model, test_dataloader, loss_function, invert_input=False, invert_output=True)
     test_losses.append(test_loss)
     # Print it out
     loss_scale = 1e4
     print(f'Epoch {epoch + 1}, T-Loss: {round(loss_scale * train_loss)}, V-Loss: {round(loss_scale * test_loss)}')
     log_memory_usage()
-    print_sample(0)
-    print_sample(1)
-    print_sample(2)
+    print_genotype_predictions(model, test_dataloader)
     train_loss_previous = train_loss
 
 plot_loss(train_losses, test_losses, f'Color Autoencoder: Dimension: {hidden_dim}, Layers: {hidden_layers}, '

@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
@@ -62,7 +61,5 @@ class SimpleAutoencoder(nn.Module):
 
         # Pass through the decoder final layer
         x = self.decoder_final(x)
-
-        # Apply tanh activation
-        x = torch.tanh(x)
+        # No final activation, we output logits
         return x
