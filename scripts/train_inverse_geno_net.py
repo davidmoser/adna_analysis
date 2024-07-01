@@ -1,5 +1,4 @@
 # Script to train inverse genonet, given age and location predict some "expected" SNPs
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -15,11 +14,12 @@ generator = use_device("cuda")
 # Hyperparameters
 batch_size = 256
 learning_rate = 0.001
-hidden_dim, hidden_layers = 100, 20
+hidden_dim, hidden_layers = 150, 10
 epochs = 30
 use_fraction = False
 use_filtered = True
 snp_fraction = 0.1  # which fraction of snps to randomly subsample
+gamma = 0.95
 
 # Load your data from a Zarr file
 dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction)
@@ -28,10 +28,27 @@ dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, us
 sample, label = next(iter(dataset))
 print(f"Creating model, Input dimension: 3, Output dimension: {len(sample)}")
 output_dim = len(sample)
-model = SimpleGenoNet(3, output_dim, hidden_dim, hidden_layers, final_fun=lambda x: 2 * torch.tanh(x))
-loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks
+nb_snps = output_dim // 4
+model = SimpleGenoNet(3, output_dim, hidden_dim, hidden_layers, final_fun=lambda x: x)
+
+
+# Optimized custom cross-entropy loss for 4D one-hot vectors
+def snp_cross_entropy_loss(output, target):
+    # Reshape output and target tensors
+    output = output.view(-1, 4)
+    target = target.view(-1, 4)
+
+    # Convert one-hot target to class indices
+    target_indices = torch.argmax(target, dim=1)
+
+    # Compute cross-entropy loss
+    loss = nn.CrossEntropyLoss(reduction='mean')(output, target_indices)
+
+    return loss
+
+
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = ExponentialLR(optimizer, gamma=0.95)
+scheduler = ExponentialLR(optimizer, gamma=gamma)
 print("finished")
 
 
@@ -40,24 +57,18 @@ def print_sample(index):
     test_features, test_labels = next(iter(test_dataloader))
     # label = test_labels[[index]]
     # label = SimpleGenoNet.train_to_real(label)
-    prediction = model(test_labels[[index]])
-
-    def count(genotypes, value):
-        return np.sum((value - 0.5 < genotypes) & (genotypes <= value + 0.5))
+    logits = model(test_labels[[index]]).view(-1, 4)
+    p = torch.nn.functional.softmax(logits, dim=1)
 
     def print_counts(genotypes):
-        undet_count = count(genotypes, -2)
-        homozygous_ref = count(genotypes, 0)
-        heterozygous = count(genotypes, 1)
-        homozygous_alt = count(genotypes, 2)
-        out_count = genotypes.shape[1] - undet_count - homozygous_ref - heterozygous - homozygous_alt
-        print(f"Undet: {undet_count}, Homozyg.Ref.: {homozygous_ref}, "
-              f"Heterozyg.: {heterozygous}, Homozyg.Alt.: {homozygous_alt}, Outside: {out_count}")
+        counts = genotypes.view(-1, 4).sum(dim=0)
+        print(f"Undet: {counts[0]:.0f}, Homozyg.Ref.: {counts[1]:.0f}, "
+              f"Heterozyg.: {counts[2]:.0f}, Homozyg.Alt.: {counts[3]:.0f}")
 
     print("Original ", end='')
-    print_counts(test_features[[index]].cpu().numpy())
+    print_counts(test_features[[index]])
     print("Prediction ", end='')
-    print_counts(prediction.detach().cpu().numpy())
+    print_counts(p.detach())
 
 
 # Training loop
@@ -73,7 +84,7 @@ for epoch in range(epochs):
     for feature_batch, label_batch in train_dataloader:
         print(".", end="")
         output = model(label_batch)
-        train_loss_obj = loss_function(output, feature_batch)
+        train_loss_obj = snp_cross_entropy_loss(output, feature_batch)
         train_loss += train_loss_obj.item()
         number_batches += 1
 
@@ -87,7 +98,7 @@ for epoch in range(epochs):
     train_loss /= number_batches
     train_losses.append(train_loss)
     # Validation loss
-    test_loss = calculate_loss(model, test_dataloader, loss_function, invert=True)
+    test_loss = calculate_loss(model, test_dataloader, snp_cross_entropy_loss, invert=True)
     test_losses.append(test_loss)
     # Print it out
     loss_scale = 1e4
