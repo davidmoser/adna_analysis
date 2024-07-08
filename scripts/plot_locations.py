@@ -35,6 +35,8 @@ def plot_locations(df):
 
     # Convert latitude and longitude to x and y coordinates
     x, y = m(df['Long.'].values, df['Lat.'].values)
+    print(f"Lowest longitude {min(df['Long.'].values)}, highest longitude {max(df['Long.'].values)}")
+    print(f"Lowest latitude {min(df['Lat.'].values)}, highest latitude {max(df['Lat.'].values)}")
 
     # Plot points with colormap, smaller size, and without edges
     m.scatter(x, y, c=ages, cmap='coolwarm', edgecolor='none', s=10,

@@ -118,5 +118,9 @@ ax.set_zlabel('Latent Dimension 3')
 plt.title('3D Scatter Plot of Latent Space')
 plt.show()
 
+maxs = latent_space.max(axis=0)
+mins = latent_space.min(axis=0)
+print(f"Max: {maxs}, Min: {mins}, Diffs: {maxs - mins}")
+
 # Save the final model
 torch.save(model.state_dict(), '../models/simple_autoencoder.pth')

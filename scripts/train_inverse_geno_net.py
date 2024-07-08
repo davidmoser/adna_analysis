@@ -25,9 +25,9 @@ gamma = 0.95
 dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction)
 
 # Initialize the model, loss function, and optimizer
-sample, label = next(iter(dataset))
-print(f"Creating model, Input dimension: 3, Output dimension: {len(sample)}")
-output_dim = len(sample)
+genotypes, label = next(iter(dataset))
+print(f"Creating model, Input dimension: 3, Output dimension: {len(genotypes)}")
+output_dim = len(genotypes)
 nb_snps = output_dim // 4
 model = SimpleGenoNet(3, output_dim, hidden_dim, hidden_layers, final_fun=lambda x: x)
 loss_function = snp_cross_entropy_loss
