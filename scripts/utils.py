@@ -20,12 +20,12 @@ def use_device(device_name):
 def calculate_loss(model, dataloader, loss_function, invert_input=False, invert_output=False):
     model.eval()
     loss = 0
-    weight = 0
+    number_batches = 0
     for features, labels in dataloader:
         output = model(labels if invert_input else features)
-        loss += loss_function(output, features if invert_output else labels).item() * len(features)
-        weight += len(features)
-    return loss / weight
+        loss += loss_function(output, features if invert_output else labels).item()
+        number_batches += 1
+    return loss / number_batches
 
 
 def load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction, label_filter=None, flattened=True):
