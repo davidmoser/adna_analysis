@@ -1,3 +1,6 @@
+import os
+
+import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -22,14 +25,17 @@ simple_autoencoder.eval()
 
 # Define ranges for location and time
 # Europe
-latitude_min, latitude_max = 30, 70
-longitude_min, longitude_max = -15, 45
+# latitude_min, latitude_max = 30, 70
+# longitude_min, longitude_max = -15, 45
 # Europe, Asia, Africa
-# latitude_min, latitude_max = -40, 85
-# longitude_min, longitude_max = -20, 150
+latitude_min, latitude_max = -40, 85
+longitude_min, longitude_max = -20, 150
 latitude_range = np.linspace(latitude_min, latitude_max, 180)
 longitude_range = np.linspace(longitude_min, longitude_max, 360)
-age_range = np.linspace(10000, 1000, 10)
+age_range = np.logspace(start=4, stop=2, num=200, base=10, dtype=np.int64)
+
+# Create a list to store filenames
+filenames = []
 
 # Generate and display images
 for age in age_range:
@@ -76,8 +82,27 @@ for age in age_range:
     plt.title(f"Age: {age}")
     plt.xlabel("Longitude")
     plt.ylabel("Latitude")
-    plt.show()
+
+    # Save the image to a file
+    filename = f"../results/image_{age}.png"
+    plt.savefig(filename)
+    filenames.append(filename)
+
     plt.clf()
     plt.close()
     del age_locations_tensor, predicted_snps, colors, normalized_colors, img  # Free up memory
     torch.cuda.empty_cache()  # Clear GPU memory if using CUDA
+
+# Create a movie from the saved images using OpenCV
+frame = cv2.imread(filenames[0])
+height, width, layers = frame.shape
+
+video = cv2.VideoWriter(filename='../results/geno_movie.mp4', fourcc=cv2.VideoWriter_fourcc(*'mp4v'), fps=10,
+                        frameSize=(width, height))
+
+for filename in filenames:
+    video.write(cv2.imread(filename))
+    os.remove(filename)  # Remove the file after adding to the video
+
+cv2.destroyAllWindows()
+video.release()
