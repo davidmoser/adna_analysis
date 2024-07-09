@@ -15,10 +15,10 @@ generator = use_device("cuda")
 batch_size = 256
 learning_rate = 0.001
 hidden_dim, hidden_layers = 150, 10
-epochs = 30
+epochs = 200
 use_fraction = False
 use_filtered = True
-snp_fraction = 0.1  # which fraction of snps to randomly subsample
+snp_fraction = 0.01  # which fraction of snps to randomly subsample
 gamma = 0.95
 
 # Load your data from a Zarr file
