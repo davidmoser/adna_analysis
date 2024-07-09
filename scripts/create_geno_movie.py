@@ -14,15 +14,19 @@ simple_autoencoder = SimpleAutoencoder(snp_dim * 4, hidden_dim, hidden_layers, 3
 
 # Load saved weights
 inverse_geno_net.load_state_dict(torch.load('../models/inverse_geno_net.pth'))
-simple_autoencoder.load_state_dict(torch.load('../models/simple_autoencoder.pth'))
+simple_autoencoder.load_state_dict(torch.load('../models/simple_autoencoder_v2.pth'))
 
 # Set models to evaluation mode
 inverse_geno_net.eval()
 simple_autoencoder.eval()
 
 # Define ranges for location and time
-latitude_min, latitude_max = 0, 70
-longitude_min, longitude_max = -20, 150
+# Europe
+latitude_min, latitude_max = 30, 70
+longitude_min, longitude_max = -15, 45
+# Europe, Asia, Africa
+# latitude_min, latitude_max = -40, 85
+# longitude_min, longitude_max = -20, 150
 latitude_range = np.linspace(latitude_min, latitude_max, 180)
 longitude_range = np.linspace(longitude_min, longitude_max, 360)
 age_range = np.linspace(10000, 1000, 10)
@@ -40,7 +44,9 @@ for age in age_range:
     colors = simple_autoencoder.encode(predicted_snps).detach().numpy()
 
     # Normalize the colors
-    normalized_colors = (colors + np.array([-100, 660, -200])) / np.array([350, 550, 650])
+    color_min = np.min(colors, axis=0)
+    color_diff = np.max(colors, axis=0) - color_min
+    normalized_colors = (colors - color_min) / color_diff
 
     # Create an image where each point has the color corresponding to its latitude and longitude
     img = np.zeros((latitude_range.size, longitude_range.size, 3))
