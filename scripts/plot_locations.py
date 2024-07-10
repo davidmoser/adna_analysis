@@ -51,21 +51,6 @@ def plot_locations(df):
     plt.clf()
 
 
-def plot_age_histogram(age_array):
-    age_array = age_array[age_array < 10000]
-    # Create a histogram plot
-    plt.figure(figsize=(10, 6))
-    plt.hist(age_array, bins=50, color='skyblue', edgecolor='black')
-    plt.title('Age Distribution')
-    plt.xlabel('Age')
-    plt.ylabel('Frequency')
-    plt.grid(axis='y', alpha=0.75)
-    # Show the plot
-    # plt.show()
-    plt.savefig('../results/age_histogram.png')
-    plt.clf()
-
-
 # plot_age_histogram(df[age_col])
 plot_locations(df)
 
