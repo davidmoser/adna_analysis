@@ -11,9 +11,9 @@ def create_layer(in_dim, out_dim, batch_norm=True):
         layers.append(nn.BatchNorm1d(out_dim))
     return nn.Sequential(*layers)
 
-class SimpleAutoencoder(nn.Module):
+class Autoencoder(nn.Module):
     def __init__(self, input_dim, hidden_dim, hidden_layers, latent_dim):
-        super(SimpleAutoencoder, self).__init__()
+        super(Autoencoder, self).__init__()
         # Encoder
         # Initial layer from 'input_dim' to 'hidden_dim' dimensions
         self.encoder_initial = create_layer(input_dim, hidden_dim)

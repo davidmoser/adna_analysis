@@ -1,4 +1,4 @@
-# Script to train with simple genonet, given SNPs predict age and location
+# Script to train with genonet, given SNPs predict age and location
 
 import torch.nn as nn
 import torch.optim as optim
@@ -6,7 +6,7 @@ from torch.optim.lr_scheduler import ExponentialLR
 
 from scripts.log_memory import log_memory_usage
 from scripts.utils import calculate_loss, load_data, use_device, plot_loss
-from simple_geno_net import SimpleGenoNet
+from genonet import Genonet
 
 # device_name = "cuda" if torch.cuda.is_available() else "cpu"
 generator = use_device("cuda")
@@ -28,7 +28,7 @@ dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, us
 sample, label = next(iter(dataset))
 print(f"Creating model, Input dimension: {len(sample)}")
 input_dim = len(sample)
-model = SimpleGenoNet(input_dim, 3, hidden_dim, hidden_layers, batch_norm=True)
+model = Genonet(input_dim, 3, hidden_dim, hidden_layers, batch_norm=True)
 loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 scheduler = ExponentialLR(optimizer, gamma=gamma)
@@ -41,8 +41,8 @@ def print_sample(index, dataloader):
     label = test_labels[[index]]
     prediction = model(test_features[[index]])
     loss = loss_function(label, prediction).item()
-    label = SimpleGenoNet.train_to_real(label)
-    prediction = SimpleGenoNet.train_to_real(prediction)
+    label = Genonet.train_to_real(label)
+    prediction = Genonet.train_to_real(prediction)
     print(f"Label: {label}, Prediction: {prediction}, Loss: {loss}")
 
 

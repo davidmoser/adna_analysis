@@ -9,7 +9,7 @@ from torch.optim.lr_scheduler import ExponentialLR
 
 from scripts.log_memory import log_memory_usage
 from scripts.utils import calculate_loss, load_data, plot_loss, snp_cross_entropy_loss, print_genotype_predictions
-from simple_autoencoder import SimpleAutoencoder
+from autoencoder import Autoencoder
 
 # device_name = "cuda" if torch.cuda.is_available() else "cpu"
 device_name = 'cuda'
@@ -36,7 +36,7 @@ dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, us
 sample, _ = next(iter(dataset))
 print(f"Creating model, Input dimension: {len(sample)}")
 input_dim = len(sample)
-model = SimpleAutoencoder(input_dim, hidden_dim, hidden_layers, 3)
+model = Autoencoder(input_dim, hidden_dim, hidden_layers, 3)
 loss_function = snp_cross_entropy_loss
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 scheduler = ExponentialLR(optimizer, gamma=gamma)
@@ -129,4 +129,4 @@ plot_loss(train_losses, test_losses, f'Color Autoencoder: Dimension: {hidden_dim
                                      f'Learning rate: {learning_rate}, Batch size: {batch_size}')
 
 # Save the final model
-torch.save(model.state_dict(), '../models/simple_autoencoder.pth')
+torch.save(model.state_dict(), '../models/autoencoder.pth')

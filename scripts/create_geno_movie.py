@@ -6,22 +6,22 @@ import numpy as np
 import torch
 from mpl_toolkits.basemap import Basemap, maskoceans
 
-from scripts.simple_autoencoder import SimpleAutoencoder
-from scripts.simple_geno_net import SimpleGenoNet
+from scripts.autoencoder import Autoencoder
+from scripts.genonet import Genonet
 
 # Instantiate models
 snp_dim = 9190
 hidden_dim, hidden_layers = 150, 10
-inverse_geno_net = SimpleGenoNet(3, snp_dim * 4, hidden_dim, hidden_layers, final_fun=lambda x: x)
-simple_autoencoder = SimpleAutoencoder(snp_dim * 4, hidden_dim, hidden_layers, 3)
+inverse_geno_net = Genonet(3, snp_dim * 4, hidden_dim, hidden_layers, final_fun=lambda x: x)
+autoencoder = Autoencoder(snp_dim * 4, hidden_dim, hidden_layers, 3)
 
 # Load saved weights
-inverse_geno_net.load_state_dict(torch.load('../models/inverse_geno_net.pth'))
-simple_autoencoder.load_state_dict(torch.load('../models/simple_autoencoder_v2.pth'))
+inverse_geno_net.load_state_dict(torch.load('../models/inverse_genonet_v2.pth'))
+autoencoder.load_state_dict(torch.load('../models/autoencoder_v2.pth'))
 
 # Set models to evaluation mode
 inverse_geno_net.eval()
-simple_autoencoder.eval()
+autoencoder.eval()
 
 # Define ranges for location and time
 # Europe
@@ -46,8 +46,8 @@ for age in age_range:
     age_locations_tensor = torch.tensor(age_locations, dtype=torch.float32)
 
     # Predict SNPs for the batch
-    predicted_snps = inverse_geno_net(SimpleGenoNet.real_to_train(age_locations_tensor))
-    colors = simple_autoencoder.encode(predicted_snps).detach().numpy()
+    predicted_snps = inverse_geno_net(Genonet.real_to_train(age_locations_tensor))
+    colors = autoencoder.encode(predicted_snps).detach().numpy()
 
     # Normalize the colors
     color_min = np.min(colors, axis=0)

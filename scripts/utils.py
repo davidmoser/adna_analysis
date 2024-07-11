@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch.utils.data import TensorDataset, DataLoader
 
 import anno
-from simple_geno_net import SimpleGenoNet
+from genonet import Genonet
 from zarr_dataset import ZarrDataset
 
 
@@ -36,7 +36,7 @@ def load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction, l
         sample_transform=None,
         label_file='../data/aadr_v54.1.p1_1240K_public.anno',
         label_cols=[anno.age_col, anno.long_col, anno.lat_col],
-        label_transform=lambda lbl: torch.tensor(SimpleGenoNet.real_to_train_single(lbl), dtype=torch.float32),
+        label_transform=lambda lbl: torch.tensor(Genonet.real_to_train_single(lbl), dtype=torch.float32),
         panda_kwargs={'sep': '\t', 'quotechar': '$', 'low_memory': False, 'on_bad_lines': 'warn', 'na_values': '..'}
     )
 

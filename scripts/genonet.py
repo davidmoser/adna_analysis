@@ -14,10 +14,10 @@ def create_layer(in_dim, out_dim, batch_norm=False):
     return nn.Sequential(*layers)
 
 
-class SimpleGenoNet(nn.Module):
+class Genonet(nn.Module):
     def __init__(self, input_dim, output_dim, hidden_dim, hidden_layers, final_fun=torch.tanh,
                  batch_norm=False):
-        super(SimpleGenoNet, self).__init__()
+        super(Genonet, self).__init__()
         # Initial layer from n to m dimensions
         self.initial_layer = create_layer(input_dim, hidden_dim, batch_norm)
 

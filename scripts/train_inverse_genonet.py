@@ -6,7 +6,7 @@ from torch.optim.lr_scheduler import ExponentialLR
 from scripts.log_memory import log_memory_usage
 from scripts.utils import calculate_loss, load_data, use_device, plot_loss, snp_cross_entropy_loss, \
     print_genotype_predictions
-from simple_geno_net import SimpleGenoNet
+from genonet import Genonet
 
 # device_name = "cuda" if torch.cuda.is_available() else "cpu"
 generator = use_device("cuda")
@@ -29,7 +29,7 @@ genotypes, label = next(iter(dataset))
 print(f"Creating model, Input dimension: 3, Output dimension: {len(genotypes)}")
 output_dim = len(genotypes)
 nb_snps = output_dim // 4
-model = SimpleGenoNet(3, output_dim, hidden_dim, hidden_layers, final_fun=lambda x: x)
+model = Genonet(3, output_dim, hidden_dim, hidden_layers, final_fun=lambda x: x)
 loss_function = snp_cross_entropy_loss
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 scheduler = ExponentialLR(optimizer, gamma=gamma)
