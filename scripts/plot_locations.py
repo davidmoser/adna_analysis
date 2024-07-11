@@ -1,5 +1,3 @@
-# Plot the locations of the specimens on a world map
-
 import matplotlib.pyplot as plt
 import pandas as pd
 from mpl_toolkits.basemap import Basemap
@@ -26,7 +24,7 @@ def plot_locations(df):
     ages[ages > oldest_age] = oldest_age
 
     # Initialize Basemap
-    plt.figure(figsize=(50, 20))
+    plt.figure(figsize=(10, 7))
     m = Basemap(projection='merc', llcrnrlat=-60, urcrnrlat=70, llcrnrlon=-180, urcrnrlon=180, lat_ts=20,
                 resolution='c')
     m.drawcoastlines()
@@ -39,18 +37,14 @@ def plot_locations(df):
     print(f"Lowest latitude {min(df['Lat.'].values)}, highest latitude {max(df['Lat.'].values)}")
 
     # Plot points with colormap, smaller size, and without edges
-    m.scatter(x, y, c=ages, cmap='coolwarm', edgecolor='none', s=10,
-              linewidth=0)  # Adjust 's' for size
+    scatter = m.scatter(x, y, c=ages, cmap='coolwarm', edgecolor='none', s=10, linewidth=0)  # Adjust 's' for size
 
-    # Add colorbar
-    plt.colorbar(label='Age (Older -> Red, Recent -> Blue)')
+    # Add colorbar with equal height
+    cbar = plt.colorbar(scatter, fraction=0.05, pad=0.05, aspect=7)
+    cbar.set_label('Sample Age')
 
-    plt.title('World Map with Points Colored by Age')
-    # plt.show()
-    plt.savefig('../results/adna_locations_on_map.png')
+    plt.title('Distribution of Samples')
+    plt.savefig('../results/adna_locations_on_map_small.png')
     plt.clf()
 
-
-# plot_age_histogram(df[age_col])
 plot_locations(df)
-

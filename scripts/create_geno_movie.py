@@ -25,11 +25,11 @@ autoencoder.eval()
 
 # Define ranges for location and time
 # Europe
-# latitude_min, latitude_max = 30, 70
-# longitude_min, longitude_max = -15, 45
+latitude_min, latitude_max = 30, 70
+longitude_min, longitude_max = -15, 45
 # Europe, Asia, Africa
-latitude_min, latitude_max = -40, 85
-longitude_min, longitude_max = -20, 150
+# latitude_min, latitude_max = -40, 85
+# longitude_min, longitude_max = -20, 150
 latitude_range = np.linspace(latitude_min, latitude_max, 180)
 longitude_range = np.linspace(longitude_min, longitude_max, 360)
 age_range = np.logspace(start=4, stop=2, num=200, base=10, dtype=np.int64)

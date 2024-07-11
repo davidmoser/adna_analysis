@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+
 from autoencoder import Autoencoder
+from scripts.genonet import Genonet
 from scripts.utils import load_data
 
 # Hyperparameters (should match those used during training)
@@ -27,6 +29,7 @@ model = Autoencoder(input_dim, hidden_dim, hidden_layers, 3).to(device)
 model.load_state_dict(torch.load('../models/autoencoder_v2.pth'))
 model.eval()
 
+
 # Function to extract latent representations
 def extract_latent_representations(dataloader, model):
     model.eval()
@@ -42,6 +45,15 @@ def extract_latent_representations(dataloader, model):
     labels = np.concatenate(labels, axis=0)
     return latent_space, labels
 
+
+# Function to filter outliers using percentile
+def filter_outliers(latent_space, labels, lower_percentile=2, upper_percentile=98):
+    lower_bounds = np.percentile(latent_space, lower_percentile, axis=0)
+    upper_bounds = np.percentile(latent_space, upper_percentile, axis=0)
+    mask = np.all((latent_space >= lower_bounds) & (latent_space <= upper_bounds), axis=1)
+    return latent_space[mask], labels[mask]
+
+
 # Function to visualize latent representations
 def visualize_latent_representations():
     # Extract latent representations for train and test datasets
@@ -51,21 +63,27 @@ def visualize_latent_representations():
     # Combine train and test data for visualization
     latent_space = np.concatenate((train_latent_space, test_latent_space), axis=0)
     labels = np.concatenate((train_labels, test_labels), axis=0)
+    mapped_labels = Genonet.train_to_real(torch.tensor(labels, device=device)).cpu().numpy()
+
+    # Filter outliers
+    filtered_latent_space, filtered_labels = filter_outliers(latent_space, mapped_labels)
 
     # 3D Scatter plot of the latent space
     fig = plt.figure(figsize=(10, 7))
     ax = fig.add_subplot(111, projection='3d')
-    sc = ax.scatter(latent_space[:, 0], latent_space[:, 1], latent_space[:, 2], c=labels[:, 0], cmap='viridis', marker='o')
-    plt.colorbar(sc, label='Label')
+    sc = ax.scatter(filtered_latent_space[:, 0], filtered_latent_space[:, 1], filtered_latent_space[:, 2],
+                    c=filtered_labels[:, 0], cmap='viridis', marker='o')
+    plt.colorbar(sc, label='Age')
     ax.set_xlabel('Latent Dimension 1')
     ax.set_ylabel('Latent Dimension 2')
     ax.set_zlabel('Latent Dimension 3')
-    plt.title('3D Scatter Plot of Latent Space')
+    plt.title('3D Scatter Plot of Latent Space (Filtered)')
     plt.show()
 
-    maxs = latent_space.max(axis=0)
-    mins = latent_space.min(axis=0)
+    maxs = filtered_latent_space.max(axis=0)
+    mins = filtered_latent_space.min(axis=0)
     print(f"Max: {maxs}, Min: {mins}, Diffs: {maxs - mins}")
+
 
 # Call the visualization function
 visualize_latent_representations()
