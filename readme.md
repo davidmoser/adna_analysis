@@ -76,7 +76,9 @@ movement of boundaries, which might suggest the mixing of populations.
 As this project is exploratory, it is important to note that the accuracy of predictions for different locations and
 times is challenging to determine, and the results should be interpreted as an inspiration for further research.
 
-[![Watch the video](./results/geno_movie_europe_thumb.png)](./results/geno_movie_europe.mp4)
+To download the video click on the image and then "View raw" on the following page.
+
+[![Video of DNA variants in Europe](./results/geno_movie_europe_thumb.png)](./results/geno_movie_europe.mp4)
 
 ## Conclusion
 
@@ -88,13 +90,17 @@ highlighting patterns of migration and population mixing.
 
 ## Further Work
 
-### Clustering:
+### Clustering
 
 Enhancing the analysis by clustering populations in the latent space and determining the most informative variants could
 provide more precise information about the genetic variants displayed, improving the interpretability of the results.
 
-### Revisiting the Analysis:
+### Revisiting the Analysis
 
 As more ancient DNA samples become available, revisiting this analysis will enhance its accuracy and information
 content, offering deeper insights into ancient human populations.
 
+### Predicting distributions of variants
+
+The Inverse Genonet only predicts a single set of variant calls for each location and time. In reality this is a
+distribution. The architecture could be extended to take this into account.
