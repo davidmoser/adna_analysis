@@ -33,12 +33,41 @@ longitude_min, longitude_max = -15, 45
 latitude_range = np.linspace(latitude_min, latitude_max, 180)
 longitude_range = np.linspace(longitude_min, longitude_max, 360)
 age_range = np.logspace(start=4, stop=2, num=200, base=10, dtype=np.int64)
+color_age_range = np.logspace(start=4, stop=2, num=10, base=10, dtype=np.int64)
 
 # Create a list to store filenames
 filenames = []
 
+color_min = np.array([1e5, 1e5, 1e5])
+color_max = np.array(-color_min)
+
+# First find range of colors for normalization
+for age in color_age_range:
+    print(f"Creating colors for age {age}")
+    # Create a batch for the current age with all latitude and longitude combinations
+    latitudes, longitudes = np.meshgrid(latitude_range, longitude_range)
+    age_locations = np.vstack([np.full(latitudes.size, age), longitudes.flatten(), latitudes.flatten()]).T
+    age_locations_tensor = torch.tensor(age_locations, dtype=torch.float32)
+
+    # Predict SNPs for the batch
+    predicted_snps = inverse_geno_net(Genonet.real_to_train(age_locations_tensor))
+    colors = autoencoder.encode(predicted_snps).detach().numpy()
+
+    # Normalize the colors
+    color_min = np.minimum(color_min, np.min(colors, axis=0))
+    color_max = np.maximum(color_max, np.max(colors, axis=0))
+
+    del age_locations_tensor, predicted_snps, colors  # Free up memory
+    torch.cuda.empty_cache()  # Clear GPU memory if using CUDA
+
 # Generate and display images
 for age in age_range:
+    filename = f"../results/image_{age}.png"
+    filenames.append(filename)
+
+    if os.path.exists(filename):
+        continue
+
     print(f"Creating image for age {age}")
     # Create a batch for the current age with all latitude and longitude combinations
     latitudes, longitudes = np.meshgrid(latitude_range, longitude_range)
@@ -50,9 +79,7 @@ for age in age_range:
     colors = autoencoder.encode(predicted_snps).detach().numpy()
 
     # Normalize the colors
-    color_min = np.min(colors, axis=0)
-    color_diff = np.max(colors, axis=0) - color_min
-    normalized_colors = (colors - color_min) / color_diff
+    normalized_colors = (colors - color_min) / (color_max - color_min)
 
     # Create an image where each point has the color corresponding to its latitude and longitude
     img = np.zeros((latitude_range.size, longitude_range.size, 3))
@@ -84,9 +111,7 @@ for age in age_range:
     plt.ylabel("Latitude")
 
     # Save the image to a file
-    filename = f"../results/image_{age}.png"
     plt.savefig(filename)
-    filenames.append(filename)
 
     plt.clf()
     plt.close()
@@ -97,7 +122,7 @@ for age in age_range:
 frame = cv2.imread(filenames[0])
 height, width, layers = frame.shape
 
-video = cv2.VideoWriter(filename='../results/geno_movie.mp4', fourcc=cv2.VideoWriter_fourcc(*'mp4v'), fps=10,
+video = cv2.VideoWriter(filename='../results/geno_movie.mp4', fourcc=cv2.VideoWriter_fourcc(*'mp4v'), fps=5,
                         frameSize=(width, height))
 
 for filename in filenames:
