@@ -76,9 +76,9 @@ movement of boundaries, which might suggest the mixing of populations.
 As this project is exploratory, it is important to note that the accuracy of predictions for different locations and
 times is challenging to determine, and the results should be interpreted as an inspiration for further research.
 
-To download the video click on the image and then "View raw" on the following page.
+Click on the image to open the video in Youtube.
 
-[![Video of DNA variants in Europe](./results/geno_movie_europe_thumb.png)](./results/geno_movie_europe.mp4)
+[![Video of DNA variants in Europe](./results/geno_movie_europe_thumb.png)](https://www.youtube.com/watch?v=RY7RiTRbkcM)
 
 ## Conclusion
 
