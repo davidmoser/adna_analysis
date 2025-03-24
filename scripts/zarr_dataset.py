@@ -9,7 +9,10 @@ class ZarrDataset(Dataset):
                  panda_kwargs=None):
         df = pd.read_csv(label_file, **(panda_kwargs or {}))
         self.labels = df[label_cols].values
-        self.zarr = zarr.open(zarr_file, mode='r')[zarr_path]
+        store = zarr.storage.ZipStore(zarr_file, mode="r")
+        self.zarr = zarr.open_array(store, path=zarr_path, mode="r")
+        if len(self.labels) != self.zarr.shape[0]:
+            raise RuntimeError(f"Number of labels {len(self.labels)} does not match ZARR array length (axis 0) {self.zarr.shape[0]}")
         self.sample_transform = sample_transform or (lambda sample: sample)
         self.label_transform = label_transform or (lambda row: row)
 
