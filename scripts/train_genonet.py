@@ -9,20 +9,19 @@ from scripts.utils import calculate_loss, load_data, use_device, plot_loss
 from genonet import Genonet
 
 # device_name = "cuda" if torch.cuda.is_available() else "cpu"
-generator = use_device("cuda")
+generator = use_device("cpu")
 
 # Hyperparameters
-batch_size = 256
+batch_size = 128
 learning_rate = 0.001
 hidden_dim, hidden_layers = 150, 10
-epochs = 1000
+epochs = 30
 use_fraction = False
-use_filtered = True
 snp_fraction = 0.1  # which fraction of snps to randomly subsample
 gamma = 1  # Learning rate decrease per epoch
 
 # Load your data from a Zarr file
-dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction)
+dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, use_fraction, snp_fraction)
 
 # Initialize the model, loss function, and optimizer
 sample, label = next(iter(dataset))

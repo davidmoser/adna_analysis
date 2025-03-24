@@ -28,14 +28,14 @@ def calculate_loss(model, dataloader, loss_function, invert_input=False, invert_
     return loss / number_batches
 
 
-def load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction, label_filter=None, flattened=True):
+def load_data(batch_size, generator, use_fraction, snp_fraction, label_filter=None, flattened=True):
     print("Preparing data")
     dataset = ZarrDataset(
-        zarr_file='../data/aadr_v54.1.p1_1240K_public_filtered_arranged.zarr' if use_filtered else '../data/aadr_v54.1.p1_1240K_public_all_arranged.zarr',
+        zarr_file='../../adna_retrieval_conversion/zarr/v62.0_1240k_public_complete_ind_chunked.zarr.zip',
         zarr_path='calldata/GT',
         sample_transform=None,
-        label_file='../data/aadr_v54.1.p1_1240K_public.anno',
-        label_cols=[anno.age_col, anno.long_col, anno.lat_col],
+        label_file='../../adna_retrieval_conversion/ancestrymap/v62.0_1240k_public.anno',
+        label_cols=[anno.age_colname, anno.long_col, anno.lat_col],
         label_transform=lambda lbl: torch.tensor(Genonet.real_to_train_single(lbl), dtype=torch.float32),
         panda_kwargs={'sep': '\t', 'quotechar': '$', 'low_memory': False, 'on_bad_lines': 'warn', 'na_values': '..'}
     )

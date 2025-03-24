@@ -5,7 +5,7 @@ import pandas as pd
 import os
 
 # Replace 'path_to_your_file.txt' with the path to your tab-separated file
-file_path = '../data/aadr_v54.1.p1_1240K_public.anno'
+file_path = '../../adna_retrieval_conversion/vcf/v62.0_1240k_public_small.anno'
 
 age_col = 'Date mean in BP in years before 1950 CE'
 lat_col = 'Lat.'
