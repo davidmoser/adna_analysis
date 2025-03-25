@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 import anno
@@ -28,7 +27,7 @@ def calculate_loss(model, dataloader, loss_function, invert_input=False, invert_
     return loss / number_batches
 
 
-def load_data(batch_size, generator, use_fraction, snp_fraction, label_filter=None, flattened=True):
+def load_data(batch_size, generator, label_filter=None, in_memory=False):
     print("Preparing data")
     dataset = ZarrDataset(
         zarr_file='../../adna_retrieval_conversion/zarr/v62.0_1240k_public_complete_ind_chunked.zarr.zip',
@@ -37,36 +36,13 @@ def load_data(batch_size, generator, use_fraction, snp_fraction, label_filter=No
         label_file='../../adna_retrieval_conversion/ancestrymap/v62.0_1240k_public.anno',
         label_cols=[anno.age_colname, anno.long_col, anno.lat_col],
         label_transform=lambda lbl: torch.tensor(Genonet.real_to_train_single(lbl), dtype=torch.float32),
-        panda_kwargs={'sep': '\t', 'quotechar': '$', 'low_memory': False, 'on_bad_lines': 'warn', 'na_values': '..'}
+        panda_kwargs={'sep': '\t', 'quotechar': '$', 'low_memory': False, 'on_bad_lines': 'warn', 'na_values': '..'},
+        in_memory=in_memory,
     )
-
-    total_snps = dataset.zarr.shape[1]
-    snp_indices = np.random.choice(total_snps, size=int(total_snps * snp_fraction), replace=False)
-
-    def to_one_hot(genotypes, num_classes=4):
-        # Convert the genotypes tensor to a new tensor with mapped values
-        genotypes_mapped = torch.full_like(genotypes, -1, dtype=torch.long)
-
-        # Map the values using vectorized operations
-        genotypes_mapped = torch.where(genotypes == -2, 0, genotypes_mapped)
-        genotypes_mapped = torch.where(genotypes == 0, 1, genotypes_mapped)
-        genotypes_mapped = torch.where(genotypes == 1, 2, genotypes_mapped)
-        genotypes_mapped = torch.where(genotypes == 2, 3, genotypes_mapped)
-
-        # Use torch.nn.functional.one_hot to create the one-hot matrix
-        one_hot_matrix = F.one_hot(genotypes_mapped, num_classes=num_classes)
-
-        return one_hot_matrix
-
-    def transform_sample(zarr_genotype):
-        genotype = torch.tensor(zarr_genotype, dtype=torch.float32)
-        filtered_genotype = genotype[snp_indices] if use_fraction else genotype
-        one_hot_genotype = to_one_hot(filtered_genotype).to(dtype=torch.float32)
-        return one_hot_genotype.view(-1) if flattened else one_hot_genotype
-
-    dataset.sample_transform = transform_sample
+    print(f"Dataset length {len(dataset)}")
 
     dataset = dataset.filter(label_filter or (lambda label: np.all(~np.isnan(label)) and 100 < label[0] <= 10000))
+    print(f"Filtered dataset {len(dataset)}")
 
     # Create DataLoader instances for training and testing
     train_dataset, test_dataset = torch.utils.data.random_split(dataset, [0.9, 0.1], generator=generator)

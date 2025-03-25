@@ -6,11 +6,15 @@ from torch.utils.data import Dataset, Subset
 
 class ZarrDataset(Dataset):
     def __init__(self, zarr_file, zarr_path, label_file, label_cols, sample_transform=None, label_transform=None,
-                 panda_kwargs=None):
+                 panda_kwargs=None, in_memory=False):
         df = pd.read_csv(label_file, **(panda_kwargs or {}))
         self.labels = df[label_cols].values
         store = zarr.storage.ZipStore(zarr_file, mode="r")
         self.zarr = zarr.open_array(store, path=zarr_path, mode="r")
+        if in_memory:
+            print("Loading dataset into memory")
+            self.zarr = self.zarr[:]
+            print("Loading dataset into memory: done")
         if len(self.labels) != self.zarr.shape[0]:
             raise RuntimeError(f"Number of labels {len(self.labels)} does not match ZARR array length (axis 0) {self.zarr.shape[0]}")
         self.sample_transform = sample_transform or (lambda sample: sample)

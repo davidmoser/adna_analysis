@@ -32,6 +32,9 @@ class Genonet(nn.Module):
         init.zeros_(self.final_layer.bias)
 
     def forward(self, x):
+        # Transform the sample
+        x = self.sample_transform(x)
+
         # Pass through the initial layer
         x = F.relu(self.initial_layer(x))
 
@@ -44,6 +47,18 @@ class Genonet(nn.Module):
         # Learn tanh for the three outputs
         x = self.final_fun(x)
         return x
+
+    def sample_transform(self, x):
+        one_hot_genotype = self.to_one_hot(x).to(dtype=torch.float32)
+        return one_hot_genotype.view(x.shape[0], -1) # if flattened else one_hot_genotype
+
+    def to_one_hot(self, genotypes, num_classes=4):
+        # Map the values using vectorized operations
+        genotype_mapping = torch.tensor([0, 0, 1, 2, 3], device=genotypes.device)
+        genotypes_mapped = genotype_mapping[(genotypes + 2).long()]
+        # Use torch.nn.functional.one_hot to create the one-hot matrix
+        one_hot_matrix = F.one_hot(genotypes_mapped, num_classes=num_classes)
+        return one_hot_matrix
 
     # Post-processing for output ranges
     # Age: 1 to 100000

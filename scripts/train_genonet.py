@@ -16,17 +16,15 @@ batch_size = 128
 learning_rate = 0.001
 hidden_dim, hidden_layers = 150, 10
 epochs = 30
-use_fraction = False
-snp_fraction = 0.1  # which fraction of snps to randomly subsample
 gamma = 1  # Learning rate decrease per epoch
 
 # Load your data from a Zarr file
-dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, use_fraction, snp_fraction)
+dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, in_memory=False)
 
 # Initialize the model, loss function, and optimizer
-sample, label = next(iter(dataset))
+sample, label = dataset[0]
 print(f"Creating model, Input dimension: {len(sample)}")
-input_dim = len(sample)
+input_dim = 4 * len(sample)
 model = Genonet(input_dim, 3, hidden_dim, hidden_layers, batch_norm=True)
 loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
