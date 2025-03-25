@@ -18,13 +18,14 @@ def use_device(device_name):
 
 def calculate_loss(model, dataloader, loss_function, invert_input=False, invert_output=False):
     model.eval()
-    loss = 0
-    number_batches = 0
-    for features, labels in dataloader:
-        output = model(labels if invert_input else features)
-        loss += loss_function(output, features if invert_output else labels).item()
-        number_batches += 1
-    return loss / number_batches
+    with torch.no_grad():
+        loss = 0
+        number_batches = 0
+        for features, labels in dataloader:
+            output = model(labels if invert_input else features)
+            loss += loss_function(output, features if invert_output else labels).item()
+            number_batches += 1
+        return loss / number_batches
 
 
 def load_data(batch_size, generator, label_filter=None, in_memory=False):

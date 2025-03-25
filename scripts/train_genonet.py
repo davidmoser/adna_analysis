@@ -1,12 +1,12 @@
 # Script to train with genonet, given SNPs predict age and location
-
+import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import ExponentialLR
 
+from genonet import Genonet
 from scripts.log_memory import log_memory_usage
 from scripts.utils import calculate_loss, load_data, use_device, plot_loss
-from genonet import Genonet
 
 # device_name = "cuda" if torch.cuda.is_available() else "cpu"
 generator = use_device("cpu")
@@ -34,13 +34,14 @@ print("finished")
 
 def print_sample(index, dataloader):
     model.eval()
-    test_features, test_labels = next(iter(dataloader))
-    label = test_labels[[index]]
-    prediction = model(test_features[[index]])
-    loss = loss_function(label, prediction).item()
-    label = Genonet.train_to_real(label)
-    prediction = Genonet.train_to_real(prediction)
-    print(f"Label: {label}, Prediction: {prediction}, Loss: {loss}")
+    with torch.no_grad():
+        test_features, test_labels = next(iter(dataloader))
+        label = test_labels[[index]]
+        prediction = model(test_features[[index]])
+        loss = loss_function(label, prediction).item()
+        label = Genonet.train_to_real(label)
+        prediction = Genonet.train_to_real(prediction)
+        print(f"Label: {label}, Prediction: {prediction}, Loss: {loss}")
 
 
 # Training loop
