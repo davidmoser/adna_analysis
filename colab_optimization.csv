@@ -1,0 +1,16 @@
+Run on L4 GPU,,,,
+Precision FP32,,,,
+"Hidden dim 150, hidden layers, 10, SNPs all",,,,
+Batch size 128,,,,
+,,,,
+Remark,Chipset,Batch time,Model time,
+Initial,L4,89,17,106
+Index lookup tensor,L4,98,17,
+Making sure genotypes is moved to device cuda initially,L4,73,17,
+Moved batch conversion to one hot to GPU,L4,78,26,
+Only defining index mapping tensor once,L4,70,26,
+"No change, different runtime",A100,53,8,
+"No change, different runtime",T4,Out of memory,,
+"No change, different runtime",CPU,"Super slow, then crashed",,
+Set TF32 to false,A100,50,8,
+Load Zarr array into memory,A100,14,7,21
