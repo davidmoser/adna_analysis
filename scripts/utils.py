@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import psutil
 import torch
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 import anno
@@ -126,3 +127,10 @@ def log_system_usage():
         log += f", GPU RAM reserved: {gpu_ram_reserved:.2f} GB"
 
     print(log)
+
+
+# converts a batch of index genotypes (0: both reference, 1: one alternate, 2: both alternate, 3: no call)
+# to one hot genotypes ([1 0 0 0]: both reference, [0 1 0 0]: one alternate, ...)
+def to_one_hot(index_genotypes):
+    one_hot_genotypes = F.one_hot(index_genotypes.long(), num_classes=4).to(dtype=torch.float32)
+    return one_hot_genotypes.view(index_genotypes.shape[0], -1)

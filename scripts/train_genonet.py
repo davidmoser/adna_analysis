@@ -7,7 +7,7 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from scripts.genonet import Genonet
-from scripts.utils import log_system_usage
+from scripts.utils import log_system_usage, to_one_hot
 from scripts.utils import use_device, calculate_loss, plot_loss, load_data
 
 device_name = "cuda" if torch.cuda.is_available() else "cpu"
@@ -26,7 +26,7 @@ dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, in
 sample, label = dataset[0]
 print(f"Creating model, Input dimension: {len(sample)}")
 input_dim = 4 * len(sample)
-model = Genonet(input_dim, 3, hidden_dim, hidden_layers, generator.device, batch_norm=True)
+model = Genonet(input_dim, 3, hidden_dim, hidden_layers, first_fun=to_one_hot, batch_norm=True)
 model = model.to(torch.float32)
 
 loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks

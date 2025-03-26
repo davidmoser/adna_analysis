@@ -15,11 +15,11 @@ def create_layer(in_dim, out_dim, batch_norm=False):
 
 
 class Genonet(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_dim, hidden_layers, device, final_fun=torch.tanh,
+    def __init__(self, input_dim, output_dim, hidden_dim, hidden_layers, first_fun=lambda x: x, final_fun=torch.tanh,
                  batch_norm=False):
         super(Genonet, self).__init__()
-        # Index mapping
-        self.genotype_mapping = torch.tensor([0, 0, 1, 2, 3], device=device)
+        # Initial conversion
+        self.first_fun = first_fun
 
         # Initial layer from n to m dimensions
         self.initial_layer = create_layer(input_dim, hidden_dim, batch_norm)
@@ -35,8 +35,8 @@ class Genonet(nn.Module):
         init.zeros_(self.final_layer.bias)
 
     def forward(self, x):
-        # Transform the sample
-        x = self.sample_transform(x)
+        # Initial conversion
+        x = self.first_fun(x)
 
         # Pass through the initial layer
         x = F.relu(self.initial_layer(x))
@@ -50,17 +50,6 @@ class Genonet(nn.Module):
         # Learn tanh for the three outputs
         x = self.final_fun(x)
         return x
-
-    def sample_transform(self, x):
-        one_hot_genotype = self.to_one_hot(x).to(dtype=torch.float32)
-        return one_hot_genotype.view(x.shape[0], -1)
-
-    def to_one_hot(self, genotypes, num_classes=4):
-        # Map the values using vectorized operations
-        genotypes_mapped = self.genotype_mapping[(genotypes + 2).long()]
-        # Use torch.nn.functional.one_hot to create the one-hot matrix
-        one_hot_matrix = F.one_hot(genotypes_mapped, num_classes=num_classes)
-        return one_hot_matrix
 
     # Post-processing for output ranges
     # Age: 1 to 100000
