@@ -4,7 +4,7 @@
 
 This project utilizes basic neural network architectures to
 analyze ancient DNA data sourced from the
-[Allen Ancient DNA Resource](https://reich.hms.harvard.edu/allen-ancient-dna-resource-aadr-downloadable-genotypes-present-day-and-ancient-dna-data).
+[Allen Ancient DNA Resource](https://reich.hms.harvard.edu/allen-ancient-dna-resource-aadr-downloadable-genotypes-present-day-and-ancient-dna-data) version 62.0.
 Our primary objective is to create a visual representation—a movie—that illustrates how different genetic variants have
 spread and evolved across Europe and Eurasia over time. The aim is to gain an exploratory understanding of genetic
 variation in ancient DNA and its change over time.
@@ -15,7 +15,7 @@ The data for this project was sourced from the Allen Ancient DNA Repository and 
 the following [scripts](https://github.com/davidmoser/adna_retrieval_conversion). The age of the sampled individuals
 ranges from contemporary to a hundred thousand years ago.
 To concentrate on the bulk of the ancient data it was filtered from 100 year old samples to 10'000 year old samples,
-resulting in 9'716 individuals used for learning.
+resulting in 13'208 individuals used for learning.
 
 ![Sample locations on a map](./results/adna_locations_on_map_small.png)
 
