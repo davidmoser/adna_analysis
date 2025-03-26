@@ -4,7 +4,7 @@ import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.optim.lr_scheduler import ExponentialLR
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from scripts.genonet import Genonet
 from scripts.utils import log_system_usage
@@ -18,10 +18,9 @@ batch_size = 128
 learning_rate = 0.001
 hidden_dim, hidden_layers = 150, 10
 epochs = 30
-gamma = 1  # Learning rate decrease per epoch
 
 # Load your data from a Zarr file
-dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, in_memory=False)
+dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, in_memory=False, small=True)
 
 # Initialize the model, loss function, and optimizer
 sample, label = dataset[0]
@@ -32,7 +31,7 @@ model = model.to(torch.float32)
 
 loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = ExponentialLR(optimizer, gamma=gamma)
+scheduler = CosineAnnealingLR(optimizer, T_max=epochs)
 print("finished")
 
 
