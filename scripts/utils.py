@@ -71,17 +71,12 @@ def plot_loss(train_losses, test_losses, title):
 
 
 # Optimized custom cross-entropy loss for 4D one-hot vectors
-def snp_cross_entropy_loss(output, target):
+def snp_cross_entropy_loss(output, target_indices):
     # Reshape output and target tensors
     output = output.view(-1, 4)
-    target = target.view(-1, 4)
-
-    # Convert one-hot target to class indices
-    target_indices = torch.argmax(target, dim=1)
-
+    target_indices = target_indices.view(-1).long()
     # Compute cross-entropy loss
     loss = torch.nn.CrossEntropyLoss(reduction='mean')(output, target_indices)
-
     return loss
 
 

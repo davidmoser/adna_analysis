@@ -1,38 +1,33 @@
 # Script to train inverse genonet, given age and location predict some "expected" SNPs
 import torch
 import torch.optim as optim
-from torch.optim.lr_scheduler import ExponentialLR
 
 from scripts.utils import log_system_usage
 from scripts.utils import calculate_loss, load_data, use_device, plot_loss, snp_cross_entropy_loss, \
     print_genotype_predictions
 from genonet import Genonet
 
-# device_name = "cuda" if torch.cuda.is_available() else "cpu"
-generator = use_device("cuda")
+device_name = "cuda" if torch.cuda.is_available() else "cpu"
+generator = use_device(device_name)
 
 # Hyperparameters
 batch_size = 256
-learning_rate = 0.001
+learning_rate = 0.002
 hidden_dim, hidden_layers = 150, 10
 epochs = 200
-use_fraction = False
-use_filtered = True
-snp_fraction = 0.01  # which fraction of snps to randomly subsample
-gamma = 0.95
 
 # Load your data from a Zarr file
-dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction)
+dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, in_memory=True, small=True)
 
 # Initialize the model, loss function, and optimizer
-genotypes, label = next(iter(dataset))
+genotypes, label = dataset[0]
 print(f"Creating model, Input dimension: 3, Output dimension: {len(genotypes)}")
-output_dim = len(genotypes)
-nb_snps = output_dim // 4
+nb_snps = len(genotypes)
+output_dim = 4 * nb_snps
 model = Genonet(3, output_dim, hidden_dim, hidden_layers, final_fun=lambda x: x)
 loss_function = snp_cross_entropy_loss
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = ExponentialLR(optimizer, gamma=gamma)
+scheduler = optim.lr_scheduler.ConstantLR(optimizer)
 print("finished")
 
 
@@ -76,4 +71,4 @@ plot_loss(train_losses, test_losses, f'Inverse-Geno-Net: Dimension: {hidden_dim}
                                      f'Learning rate: {learning_rate}, Batch size: {batch_size}')
 
 # Save the final model
-torch.save(model.state_dict(), '../models/inverse_geno_net.pth')
+#torch.save(model.state_dict(), '../models/inverse_geno_net.pth')
