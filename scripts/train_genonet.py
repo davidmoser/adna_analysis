@@ -27,7 +27,7 @@ dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, in
 sample, label = dataset[0]
 print(f"Creating model, Input dimension: {len(sample)}")
 input_dim = 4 * len(sample)
-model = Genonet(input_dim, 3, hidden_dim, hidden_layers, batch_norm=True)
+model = Genonet(input_dim, 3, hidden_dim, hidden_layers, generator.device, batch_norm=True)
 model = model.to(torch.float32)
 
 loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks

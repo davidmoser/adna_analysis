@@ -15,8 +15,12 @@ def create_layer(in_dim, out_dim, batch_norm=False):
 
 
 class Genonet(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_dim, hidden_layers, final_fun=torch.tanh, batch_norm=False):
+    def __init__(self, input_dim, output_dim, hidden_dim, hidden_layers, device, final_fun=torch.tanh,
+                 batch_norm=False):
         super(Genonet, self).__init__()
+        # Index mapping
+        self.genotype_mapping = torch.tensor([0, 0, 1, 2, 3], device=device)
+
         # Initial layer from n to m dimensions
         self.initial_layer = create_layer(input_dim, hidden_dim, batch_norm)
 
@@ -49,12 +53,11 @@ class Genonet(nn.Module):
 
     def sample_transform(self, x):
         one_hot_genotype = self.to_one_hot(x).to(dtype=torch.float32)
-        return one_hot_genotype.view(x.shape[0], -1)  # if flattened else one_hot_genotype
+        return one_hot_genotype.view(x.shape[0], -1)
 
     def to_one_hot(self, genotypes, num_classes=4):
         # Map the values using vectorized operations
-        genotype_mapping = torch.tensor([0, 0, 1, 2, 3], device=genotypes.device)
-        genotypes_mapped = genotype_mapping[(genotypes + 2).long()]
+        genotypes_mapped = self.genotype_mapping[(genotypes + 2).long()]
         # Use torch.nn.functional.one_hot to create the one-hot matrix
         one_hot_matrix = F.one_hot(genotypes_mapped, num_classes=num_classes)
         return one_hot_matrix
