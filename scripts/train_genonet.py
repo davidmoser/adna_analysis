@@ -15,7 +15,7 @@ generator = use_device(device_name)
 
 def train_genonet(epochs, learning_rate, batch_size, hidden_dim, hidden_layers, small=True, schedule="cosine", verbose=False):
     # Load your data from a Zarr file
-    dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, in_memory=True, small=small)
+    dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, in_memory=False, small=small)
 
     # Initialize the model, loss function, and optimizer
     sample, label = dataset[0]
