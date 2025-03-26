@@ -31,13 +31,15 @@ def calculate_loss(model, dataloader, loss_function, invert_input=False, invert_
         return loss / number_batches
 
 
-def load_data(batch_size, generator, label_filter=None, in_memory=False):
+def load_data(batch_size, generator, small=False, label_filter=None, in_memory=False):
     print("Preparing data")
     dataset = ZarrDataset(
-        zarr_file='../../adna_retrieval_conversion/zarr/v62.0_1240k_public_complete_ind_chunked.zarr.zip',
+        zarr_file='../../adna_retrieval_conversion/zarr/v62.0_1240k_public_small_ind_chunked.zarr.zip' if small
+        else '../../adna_retrieval_conversion/zarr/v62.0_1240k_public_complete_ind_chunked.zarr.zip',
         zarr_path='calldata/GT',
         sample_transform=None,
-        label_file='../../adna_retrieval_conversion/ancestrymap/v62.0_1240k_public.anno',
+        label_file='../../adna_retrieval_conversion/vcf/v62.0_1240k_public_small.anno' if small
+        else '../../adna_retrieval_conversion/ancestrymap/v62.0_1240k_public.anno',
         label_cols=[anno.age_colname, anno.long_col, anno.lat_col],
         label_transform=lambda lbl: torch.tensor(Genonet.real_to_train_single(lbl), dtype=torch.float32),
         panda_kwargs={'sep': '\t', 'quotechar': '$', 'low_memory': False, 'on_bad_lines': 'warn', 'na_values': '..'},
