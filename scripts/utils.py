@@ -1,5 +1,8 @@
+import subprocess
+
 import matplotlib.pyplot as plt
 import numpy as np
+import psutil
 import torch
 from torch.utils.data import DataLoader
 
@@ -101,3 +104,23 @@ def print_genotype_prediction(model, dataloader, index, invert=False):
     print_counts(features[[index]])
     print("Prediction ", end='')
     print_counts(p.detach())
+
+
+def log_system_usage():
+    # RAM Usage
+    ram_usage = psutil.virtual_memory().percent  # Get the system RAM usage percentage
+    log = f"System RAM usage: {ram_usage}%"
+
+    if torch.cuda.is_available():
+        output = subprocess.check_output(
+            ['nvidia-smi', '--query-gpu=utilization.gpu,memory.used,memory.total', '--format=csv,nounits,noheader']
+        )
+        log += f", GPU usage: {output.decode().strip()}%"
+
+        # GPU RAM Usage
+        gpu_ram_allocated = torch.cuda.memory_allocated(0) / (1024 ** 3)  # Convert bytes to GB
+        gpu_ram_reserved = torch.cuda.memory_reserved(0) / (1024 ** 3)  # Convert bytes to GB
+        log += f", GPU RAM allocated: {gpu_ram_allocated:.2f} GB"
+        log += f", GPU RAM reserved: {gpu_ram_reserved:.2f} GB"
+
+    print(log)

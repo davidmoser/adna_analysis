@@ -15,8 +15,7 @@ def create_layer(in_dim, out_dim, batch_norm=False):
 
 
 class Genonet(nn.Module):
-    def __init__(self, input_dim, output_dim, hidden_dim, hidden_layers, final_fun=torch.tanh,
-                 batch_norm=False):
+    def __init__(self, input_dim, output_dim, hidden_dim, hidden_layers, final_fun=torch.tanh, batch_norm=False):
         super(Genonet, self).__init__()
         # Initial layer from n to m dimensions
         self.initial_layer = create_layer(input_dim, hidden_dim, batch_norm)
@@ -50,7 +49,7 @@ class Genonet(nn.Module):
 
     def sample_transform(self, x):
         one_hot_genotype = self.to_one_hot(x).to(dtype=torch.float32)
-        return one_hot_genotype.view(x.shape[0], -1) # if flattened else one_hot_genotype
+        return one_hot_genotype.view(x.shape[0], -1)  # if flattened else one_hot_genotype
 
     def to_one_hot(self, genotypes, num_classes=4):
         # Map the values using vectorized operations

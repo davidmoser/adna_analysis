@@ -3,7 +3,7 @@ import torch
 import torch.optim as optim
 from torch.optim.lr_scheduler import ExponentialLR
 
-from scripts.log_memory import log_memory_usage
+from scripts.utils import log_system_usage
 from scripts.utils import calculate_loss, load_data, use_device, plot_loss, snp_cross_entropy_loss, \
     print_genotype_predictions
 from genonet import Genonet
@@ -68,7 +68,7 @@ for epoch in range(epochs):
     # Print it out
     loss_scale = 1e4
     print(f'Epoch {epoch + 1}, T-Loss: {round(loss_scale * train_loss)}, V-Loss: {round(loss_scale * test_loss)}')
-    log_memory_usage()
+    log_system_usage()
     print_genotype_predictions(model, test_dataloader, invert=True)
     train_loss_previous = train_loss
 

@@ -1,15 +1,17 @@
 # Script to train with genonet, given SNPs predict age and location
+import time
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.optim.lr_scheduler import ExponentialLR
 
-from genonet import Genonet
-from scripts.log_memory import log_memory_usage
-from scripts.utils import calculate_loss, load_data, use_device, plot_loss
+from scripts.genonet import Genonet
+from scripts.utils import log_system_usage
+from scripts.utils import use_device, calculate_loss, plot_loss, load_data
 
-# device_name = "cuda" if torch.cuda.is_available() else "cpu"
-generator = use_device("cpu")
+device_name = "cuda" if torch.cuda.is_available() else "cpu"
+generator = use_device(device_name)
 
 # Hyperparameters
 batch_size = 128
@@ -26,6 +28,8 @@ sample, label = dataset[0]
 print(f"Creating model, Input dimension: {len(sample)}")
 input_dim = 4 * len(sample)
 model = Genonet(input_dim, 3, hidden_dim, hidden_layers, batch_norm=True)
+model = model.to(torch.float32)
+
 loss_function = nn.MSELoss()  # Using Mean Squared Error Loss for regression tasks
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 scheduler = ExponentialLR(optimizer, gamma=gamma)
@@ -54,7 +58,14 @@ for epoch in range(epochs):
     model.train()
     train_loss = 0
     number_batches = 0
+    batch_time = 0
+    gpu_time = 0
+    batch_current = time.time()
     for feature_batch, label_batch in train_dataloader:
+        batch_time += time.time() - batch_current
+        batch_current = time.time()
+
+        gpu_current = time.time()
         print(".", end="")
         output = model(feature_batch)
         train_loss_obj = loss_function(output, label_batch)
@@ -64,7 +75,8 @@ for epoch in range(epochs):
         optimizer.zero_grad()
         train_loss_obj.backward()
         optimizer.step()
-
+        gpu_time += time.time() - gpu_current
+        gpu_current = time.time()
     print("")
     scheduler.step()
     # Loss and change in loss
@@ -78,13 +90,12 @@ for epoch in range(epochs):
     # Print it out
     loss_scale = 1e7
     print(f'Epoch {epoch + 1}, T-Loss: {round(loss_scale * train_loss)}, V-Loss: {round(loss_scale * test_loss)}')
-    log_memory_usage()
+    print(f'Time spent loading batches {batch_time}, time spent updating model {gpu_time}')
+    log_system_usage()
     print_sample(0, test_dataloader)
     print_sample(1, test_dataloader)
-    print_sample(2, test_dataloader)
     print_sample(0, train_dataloader)
     print_sample(1, train_dataloader)
-    print_sample(2, train_dataloader)
     train_loss_previous = train_loss
 
 plot_loss(train_losses, test_losses, f'Simple-Geno-Net: Dimension: {hidden_dim}, Layers: {hidden_layers}, '
