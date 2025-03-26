@@ -115,7 +115,7 @@ def log_system_usage():
 
     if torch.cuda.is_available():
         output = subprocess.check_output(
-            ['nvidia-smi', '--query-gpu=utilization.gpu,memory.used,memory.total', '--format=csv,nounits,noheader']
+            ['nvidia-smi', '--query-gpu=utilization.gpu', '--format=csv,nounits,noheader']
         )
         log += f", GPU usage: {output.decode().strip()}%"
 
