@@ -5,14 +5,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torch.optim as optim
-from torch.optim.lr_scheduler import ExponentialLR
 
 from scripts.utils import log_system_usage
 from scripts.utils import calculate_loss, load_data, plot_loss, snp_cross_entropy_loss, print_genotype_predictions
 from autoencoder import Autoencoder
 
-# device_name = "cuda" if torch.cuda.is_available() else "cpu"
-device_name = 'cuda'
+device_name = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using device: {device_name}")
 
 device = torch.device(device_name)
@@ -21,25 +19,21 @@ generator = torch.Generator(device=device)
 
 # Hyperparameters
 batch_size = 256
-learning_rate = 0.01
-hidden_dim, hidden_layers = 150, 10
+learning_rate = 0.02
+hidden_dim, hidden_layers = 150, 20
 epochs = 100
-use_fraction = False
-use_filtered = True
-snp_fraction = 0.1  # which fraction of snps to randomly subsample
-gamma = 1
 
 # Load your data from a Zarr file
-dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, use_filtered, use_fraction, snp_fraction)
+dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, small=True, in_memory=True)
 
 # Initialize the model, loss function, and optimizer
 sample, _ = next(iter(dataset))
-print(f"Creating model, Input dimension: {len(sample)}")
-input_dim = len(sample)
+input_dim = 4 * len(sample)
+print(f"Creating model, Input dimension: {input_dim}")
 model = Autoencoder(input_dim, hidden_dim, hidden_layers, 3)
 loss_function = snp_cross_entropy_loss
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-scheduler = ExponentialLR(optimizer, gamma=gamma)
+scheduler = torch.optim.lr_scheduler.ConstantLR(optimizer)
 print("finished")
 
 # Visualize
@@ -129,4 +123,4 @@ plot_loss(train_losses, test_losses, f'Color Autoencoder: Dimension: {hidden_dim
                                      f'Learning rate: {learning_rate}, Batch size: {batch_size}')
 
 # Save the final model
-torch.save(model.state_dict(), '../models/autoencoder.pth')
+#torch.save(model.state_dict(), '../models/autoencoder.pth')

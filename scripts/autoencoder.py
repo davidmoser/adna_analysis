@@ -2,6 +2,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
 
+from scripts.utils import to_one_hot
+
 
 def create_layer(in_dim, out_dim, batch_norm=True):
     layers = [nn.Linear(in_dim, out_dim)]
@@ -40,6 +42,7 @@ class Autoencoder(nn.Module):
         return x
 
     def encode(self, x):
+        x = to_one_hot(x)
         # Pass through the encoder initial layer
         x = F.relu(self.encoder_initial(x))
 
