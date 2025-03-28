@@ -67,8 +67,8 @@ for epoch in range(epochs):
     print_genotype_predictions(model, test_dataloader, invert=True)
     train_loss_previous = train_loss
 
-plot_loss(train_losses, test_losses, f'Inverse-Geno-Net: Dimension: {hidden_dim}, Layers: {hidden_layers}, '
+plot_loss(train_losses, test_losses, f'Inverse-Genonet: Dimension: {hidden_dim}, Layers: {hidden_layers}, '
                                      f'Learning rate: {learning_rate}, Batch size: {batch_size}')
 
 # Save the final model
-#torch.save(model.state_dict(), '../models/inverse_geno_net.pth')
+torch.save(model.state_dict(), '../models/inverse_genonet.pth')
