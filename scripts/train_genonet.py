@@ -15,7 +15,7 @@ generator = use_device(device_name)
 
 def train_genonet(epochs, learning_rate, batch_size, hidden_dim, hidden_layers, small=True, schedule="cosine", verbose=False):
     # Load your data from a Zarr file
-    dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, in_memory=False, small=small)
+    dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, in_memory=True, small=small)
 
     # Initialize the model, loss function, and optimizer
     sample, label = dataset[0]
@@ -57,14 +57,8 @@ def train_genonet(epochs, learning_rate, batch_size, hidden_dim, hidden_layers, 
         model.train()
         train_loss = 0
         number_batches = 0
-        batch_time = 0
-        gpu_time = 0
-        batch_current = time.time()
-        for feature_batch, label_batch in train_dataloader:
-            batch_time += time.time() - batch_current
-            batch_current = time.time()
 
-            gpu_current = time.time()
+        for feature_batch, label_batch in train_dataloader:
             print(".", end="")
             output = model(feature_batch)
             train_loss_obj = loss_function(output, label_batch)
@@ -74,8 +68,7 @@ def train_genonet(epochs, learning_rate, batch_size, hidden_dim, hidden_layers, 
             optimizer.zero_grad()
             train_loss_obj.backward()
             optimizer.step()
-            gpu_time += time.time() - gpu_current
-            gpu_current = time.time()
+
         print("")
         scheduler.step()
         # Loss and change in loss
@@ -90,7 +83,6 @@ def train_genonet(epochs, learning_rate, batch_size, hidden_dim, hidden_layers, 
         loss_scale = 1e7
         print(f'Epoch {epoch + 1}, T-Loss: {round(loss_scale * train_loss)}, V-Loss: {round(loss_scale * test_loss)}')
         if verbose:
-            print(f'Time spent loading batches {batch_time}, time spent updating model {gpu_time}')
             log_system_usage()
             print_sample(0, test_dataloader)
             print_sample(1, test_dataloader)

@@ -53,6 +53,8 @@ def load_data(batch_size, generator, small=False, label_filter=None, in_memory=F
 
     # Create DataLoader instances for training and testing
     train_dataset, test_dataset = torch.utils.data.random_split(dataset, [0.9, 0.1], generator=generator)
+    print(f"Train dataset {len(train_dataset)}")
+    print(f"Test dataset {len(test_dataset)}")
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, generator=generator)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, generator=generator)
     print("finished")
@@ -70,25 +72,22 @@ def plot_loss(train_losses, test_losses, title):
     plt.show()
 
 
-# Optimized custom cross-entropy loss for 4D one-hot vectors
 def snp_cross_entropy_loss(output, target_indices):
-    # Reshape output and target tensors
-    output = output.view(-1, 4)
-    target_indices = target_indices.view(-1).long()
-    # Compute cross-entropy loss
-    loss = torch.nn.CrossEntropyLoss(reduction='mean')(output, target_indices)
-    return loss
+    output = output.view(output.shape[0], 4, -1)
+    return torch.nn.CrossEntropyLoss(reduction='mean')(output, target_indices.long())
 
 
 def print_genotype_predictions(model, dataloader, invert=False):
-    print_genotype_prediction(model, dataloader, 0, invert)
-    print_genotype_prediction(model, dataloader, 1, invert)
-    print_genotype_prediction(model, dataloader, 2, invert)
-
-
-def print_genotype_prediction(model, dataloader, index, invert=False):
     model.eval()
-    features, labels = next(iter(dataloader))
+    with torch.no_grad():
+        genotypes, labels = next(iter(dataloader))
+        genotypes_oh = to_one_hot(genotypes[:3])
+        print_genotype_prediction(model, genotypes_oh, labels, 0, invert)
+        print_genotype_prediction(model, genotypes_oh, labels, 1, invert)
+        print_genotype_prediction(model, genotypes_oh, labels, 2, invert)
+
+
+def print_genotype_prediction(model, features, labels, index, invert=False):
     model_input = labels if invert else features
     logits = model(model_input[[index]]).view(-1, 4)
     p = torch.nn.functional.softmax(logits, dim=1)

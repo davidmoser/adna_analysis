@@ -12,9 +12,9 @@ generator = use_device(device_name)
 
 # Hyperparameters
 batch_size = 256
-learning_rate = 0.002
-hidden_dim, hidden_layers = 150, 10
-epochs = 200
+learning_rate = 0.001
+hidden_dim, hidden_layers = 150, 20
+epochs = 100
 
 # Load your data from a Zarr file
 dataset, train_dataloader, test_dataloader = load_data(batch_size, generator, in_memory=True, small=True)
@@ -24,7 +24,7 @@ genotypes, label = dataset[0]
 print(f"Creating model, Input dimension: 3, Output dimension: {len(genotypes)}")
 nb_snps = len(genotypes)
 output_dim = 4 * nb_snps
-model = Genonet(3, output_dim, hidden_dim, hidden_layers, final_fun=lambda x: x)
+model = Genonet(3, output_dim, hidden_dim, hidden_layers, final_fun=lambda x: x, batch_norm=True)
 loss_function = snp_cross_entropy_loss
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 scheduler = optim.lr_scheduler.ConstantLR(optimizer)
@@ -71,4 +71,4 @@ plot_loss(train_losses, test_losses, f'Inverse-Genonet: Dimension: {hidden_dim},
                                      f'Learning rate: {learning_rate}, Batch size: {batch_size}')
 
 # Save the final model
-torch.save(model.state_dict(), '../models/inverse_genonet.pth')
+torch.save(model.state_dict(), './inverse_genonet.pth')
