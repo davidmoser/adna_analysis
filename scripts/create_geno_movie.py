@@ -10,18 +10,19 @@ from scripts.autoencoder import Autoencoder
 from scripts.genonet import Genonet
 
 # Instantiate models
-snp_dim = 9190
+dims = 4932052
 hidden_dim, hidden_layers = 150, 10
-inverse_geno_net = Genonet(3, snp_dim * 4, hidden_dim, hidden_layers, final_fun=lambda x: x)
-autoencoder = Autoencoder(snp_dim * 4, hidden_dim, hidden_layers, 3)
+inverse_geno_net = Genonet(3, dims, hidden_dim, hidden_layers, final_fun=lambda x: x, batch_norm=True)
+autoencoder = Autoencoder(dims, hidden_dim, hidden_layers, 3)
 
 # Load saved weights
-inverse_geno_net.load_state_dict(torch.load('../models/inverse_genonet_v2.pth'))
-autoencoder.load_state_dict(torch.load('../models/autoencoder_v2.pth'))
+inverse_geno_net.load_state_dict(torch.load('./inverse_genonet.pth'))
+autoencoder.load_state_dict(torch.load('./autoencoder.pth'))
 
 # Set models to evaluation mode
 inverse_geno_net.eval()
 autoencoder.eval()
+torch.set_grad_enabled(False)
 
 # Define ranges for location and time
 # Europe
@@ -34,6 +35,9 @@ latitude_range = np.linspace(latitude_min, latitude_max, 180)
 longitude_range = np.linspace(longitude_min, longitude_max, 360)
 age_range = np.logspace(start=4, stop=2, num=200, base=10, dtype=np.int64)
 color_age_range = np.logspace(start=4, stop=2, num=10, base=10, dtype=np.int64)
+
+# Batch size for processing
+batch_size = 64
 
 # Create a list to store filenames
 filenames = []
@@ -49,20 +53,29 @@ for age in color_age_range:
     age_locations = np.vstack([np.full(latitudes.size, age), longitudes.flatten(), latitudes.flatten()]).T
     age_locations_tensor = torch.tensor(age_locations, dtype=torch.float32)
 
-    # Predict SNPs for the batch
-    predicted_snps = inverse_geno_net(Genonet.real_to_train(age_locations_tensor))
-    colors = autoencoder.encode(predicted_snps).detach().numpy()
+    # Process in batches
+    color_batches = []
+    num_samples = age_locations_tensor.size(0)
+    for i in range(0, num_samples, batch_size):
+        batch = age_locations_tensor[i:i+batch_size]
+        # Preprocess input as required by the network
+        batch_input = Genonet.real_to_train(batch)
+        predicted_snps = inverse_geno_net(batch_input)
+        # For normalization, use one_hot=False
+        batch_colors = autoencoder.encode(predicted_snps, one_hot=False)
+        color_batches.append(batch_colors.cpu().detach())
+    colors = torch.cat(color_batches, dim=0).numpy()
 
     # Normalize the colors
     color_min = np.minimum(color_min, np.min(colors, axis=0))
     color_max = np.maximum(color_max, np.max(colors, axis=0))
 
-    del age_locations_tensor, predicted_snps, colors  # Free up memory
+    del age_locations_tensor, color_batches, colors  # Free up memory
     torch.cuda.empty_cache()  # Clear GPU memory if using CUDA
 
 # Generate and display images
 for age in age_range:
-    filename = f"../results/image_{age}.png"
+    filename = f"./movie/image_{age}.png"
     filenames.append(filename)
 
     if os.path.exists(filename):
@@ -74,9 +87,17 @@ for age in age_range:
     age_locations = np.vstack([np.full(latitudes.size, age), longitudes.flatten(), latitudes.flatten()]).T
     age_locations_tensor = torch.tensor(age_locations, dtype=torch.float32)
 
-    # Predict SNPs for the batch
-    predicted_snps = inverse_geno_net(Genonet.real_to_train(age_locations_tensor))
-    colors = autoencoder.encode(predicted_snps).detach().numpy()
+    # Process in batches
+    color_batches = []
+    num_samples = age_locations_tensor.size(0)
+    for i in range(0, num_samples, batch_size):
+        batch = age_locations_tensor[i:i+batch_size]
+        batch_input = Genonet.real_to_train(batch)
+        predicted_snps = inverse_geno_net(batch_input)
+        # For image generation, use the default one_hot setting
+        batch_colors = autoencoder.encode(predicted_snps, one_hot=False)
+        color_batches.append(batch_colors.detach())
+    colors = torch.cat(color_batches, dim=0).cpu().numpy()
 
     # Normalize the colors
     normalized_colors = (colors - color_min) / (color_max - color_min)
@@ -115,19 +136,21 @@ for age in age_range:
 
     plt.clf()
     plt.close()
-    del age_locations_tensor, predicted_snps, colors, normalized_colors, img  # Free up memory
+    del age_locations_tensor, color_batches, colors, normalized_colors, img  # Free up memory
     torch.cuda.empty_cache()  # Clear GPU memory if using CUDA
 
 # Create a movie from the saved images using OpenCV
 frame = cv2.imread(filenames[0])
 height, width, layers = frame.shape
 
-video = cv2.VideoWriter(filename='../results/geno_movie.mp4', fourcc=cv2.VideoWriter_fourcc(*'mp4v'), fps=5,
+video = cv2.VideoWriter(filename='./geno_movie.mp4', fourcc=cv2.VideoWriter_fourcc(*'mp4v'), fps=5,
                         frameSize=(width, height))
 
 for filename in filenames:
     video.write(cv2.imread(filename))
     os.remove(filename)  # Remove the file after adding to the video
 
-cv2.destroyAllWindows()
+# cv2.destroyAllWindows()
 video.release()
+
+torch.set_grad_enabled(True)
