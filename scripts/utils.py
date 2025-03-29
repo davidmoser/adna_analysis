@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 
 import anno
 from genonet import Genonet
+from scripts.test_dataset import TestDataset
 from zarr_dataset import ZarrDataset
 
 
@@ -61,6 +62,14 @@ def load_data(batch_size, generator, small=False, label_filter=None, in_memory=F
     return dataset, train_dataloader, test_dataloader
 
 
+def load_test_data(batch_size, generator, n=10000, size=1000):
+    dataset = TestDataset(n, size)
+    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [0.9, 0.1], generator=generator)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, generator=generator)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, generator=generator)
+    return dataset, train_dataloader, test_dataloader
+
+
 def plot_loss(train_losses, test_losses, title):
     plt.figure(figsize=(10, 5))
     plt.plot(np.log10(train_losses), label='Training Loss')
@@ -94,7 +103,8 @@ def print_genotype_prediction(model, features, labels, index, invert=False):
 
     def print_counts(genotypes):
         counts = genotypes.view(-1, 4).sum(dim=0)
-        print(f"Homozyg.Ref.: {counts[0]:.0f}, Heterozyg.: {counts[1]:.0f}, Homozyg.Alt.: {counts[2]:.0f}, Undet: {counts[3]:.0f}")
+        print(
+            f"Homozyg.Ref.: {counts[0]:.0f}, Heterozyg.: {counts[1]:.0f}, Homozyg.Alt.: {counts[2]:.0f}, Undet: {counts[3]:.0f}")
 
     print("Original ", end='')
     print_counts(features[[index]])
