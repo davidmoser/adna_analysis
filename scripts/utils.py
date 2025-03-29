@@ -94,8 +94,7 @@ def print_genotype_prediction(model, features, labels, index, invert=False):
 
     def print_counts(genotypes):
         counts = genotypes.view(-1, 4).sum(dim=0)
-        print(f"Undet: {counts[0]:.0f}, Homozyg.Ref.: {counts[1]:.0f}, "
-              f"Heterozyg.: {counts[2]:.0f}, Homozyg.Alt.: {counts[3]:.0f}")
+        print(f"Homozyg.Ref.: {counts[0]:.0f}, Heterozyg.: {counts[1]:.0f}, Homozyg.Alt.: {counts[2]:.0f}, Undet: {counts[3]:.0f}")
 
     print("Original ", end='')
     print_counts(features[[index]])
